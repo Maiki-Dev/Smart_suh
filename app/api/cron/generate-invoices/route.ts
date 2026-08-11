@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
+import { verifyCronRequest } from '@/lib/cron/verify-cron';
 import { generateMonthlyInvoices } from '@/lib/queries/invoices';
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = verifyCronRequest(request);
+  if (unauthorized) return unauthorized;
 
   try {
     const results = await generateMonthlyInvoices();

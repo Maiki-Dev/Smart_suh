@@ -22,12 +22,13 @@ import {
   paymentStatusLabel,
   residentStatusLabel,
 } from '@/lib/admin/format';
-import { getApartmentDetailBundle } from '@/lib/queries/apartments';
+import { getApartmentDetailBundle, getApartmentDeleteBlockers } from '@/lib/queries/apartments';
 import { listResidentsByApartment } from '@/lib/queries/residents';
 import { listInvoicesByApartment } from '@/lib/queries/invoices';
 import { listPaymentsByApartment } from '@/lib/queries/payments';
 import { listVehiclesByApartment } from '@/lib/queries/vehicles';
 import { ArrowLeft } from 'lucide-react';
+import { ApartmentDetailActions } from '@/components/admin/ApartmentDetailActions';
 
 export default async function AdminApartmentDetailPage({
   params,
@@ -50,6 +51,8 @@ export default async function AdminApartmentDetailPage({
 
   const apt = detail.apartment;
   const apartmentLabel = [apt.tower, apt.apartment_number].filter(Boolean).join(' · ');
+  const deleteBlockers = await getApartmentDeleteBlockers(apartmentId);
+  const hasOwner = !!detail.owner || residentsRes.data.some((r) => r.is_owner);
 
   return (
     <>
@@ -76,11 +79,10 @@ export default async function AdminApartmentDetailPage({
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <Info label="Барилга" value={apt.building_name} />
-              <Info label="Цамхаг" value={apt.tower ?? '—'} />
+              <Info label="Байр" value={apt.tower ?? '—'} />
               <Info label="Орц" value={apt.entrance ?? '—'} />
               <Info label="Давхар" value={apt.floor?.toString() ?? '—'} />
-              <Info label="Орон сууцны №" value={apt.apartment_number} />
-              <Info label="Талбай" value={apt.area_m2 ? `${apt.area_m2} м²` : '—'} />
+              <Info label="Тоот" value={apt.apartment_number} />
               <Info label="Сарын төлбөр" value={formatMNT(apt.monthly_fee)} />
               <Info
                 label="Эзэмшигч"
@@ -220,6 +222,13 @@ export default async function AdminApartmentDetailPage({
             )}
           </SectionCard>
         </div>
+
+        <ApartmentDetailActions
+          apartmentId={apartmentId}
+          hasOwner={hasOwner}
+          canDelete={deleteBlockers.length === 0}
+          deleteBlockers={deleteBlockers}
+        />
       </AdminShell>
     </>
   );

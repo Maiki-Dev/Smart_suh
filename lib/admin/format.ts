@@ -92,12 +92,18 @@ export function vehicleTypeLabel(type: string): string {
   }
 }
 
+export function gateAccessStatusLabel(enabled: boolean): string {
+  return enabled ? 'ИДЭВХТЭЙ' : 'ИДЭВХГҮЙ';
+}
+
 export function gateActionLabel(action: string): string {
   switch (action) {
     case 'ENTER':
       return 'Орсон';
     case 'EXIT':
       return 'Гарсан';
+    case 'DENIED':
+      return 'Хориглосон';
     default:
       return action;
   }
@@ -122,6 +128,8 @@ export function maintenanceStatusLabel(status: string): string {
 
 export function maintenancePriorityLabel(priority: string): string {
   switch (priority) {
+    case 'CRITICAL':
+      return 'Яаралтай';
     case 'HIGH':
       return 'Өндөр';
     case 'MEDIUM':
@@ -139,18 +147,89 @@ export function maintenanceCategoryLabel(category: string): string {
       return 'Ус, канал';
     case 'ELECTRICAL':
       return 'Цахилгаан';
-    case 'HEATING':
+    case 'STRUCTURAL':
+      return 'Лифт / Бүтэц';
+    case 'HVAC':
       return 'Халаалт';
-    case 'ELEVATOR':
-      return 'Лифт';
-    case 'SECURITY':
-      return 'Аюулгүй байдал';
     case 'CLEANING':
       return 'Цэвэрлэгээ';
     case 'OTHER':
       return 'Бусад';
     default:
       return category;
+  }
+}
+
+export const MAINTENANCE_CATEGORY_OPTIONS = [
+  { value: 'STRUCTURAL', label: 'Лифт' },
+  { value: 'PLUMBING', label: 'Ус, канал' },
+  { value: 'ELECTRICAL', label: 'Цахилгаан' },
+  { value: 'CLEANING', label: 'Цэвэрлэгээ' },
+  { value: 'HVAC', label: 'Халаалт' },
+  { value: 'OTHER', label: 'Бусад' },
+] as const;
+
+export const MAINTENANCE_PRIORITY_OPTIONS = [
+  { value: 'LOW', label: 'Бага' },
+  { value: 'MEDIUM', label: 'Дунд' },
+  { value: 'HIGH', label: 'Өндөр' },
+  { value: 'CRITICAL', label: 'Яаралтай' },
+] as const;
+
+export const MAINTENANCE_STATUS_OPTIONS = [
+  { value: 'OPEN', label: 'Шинэ' },
+  { value: 'IN_PROGRESS', label: 'Явцад' },
+  { value: 'COMPLETED', label: 'Шийдсэн' },
+  { value: 'CANCELLED', label: 'Хаагдсан' },
+  { value: 'ON_HOLD', label: 'Түр зогссон' },
+] as const;
+
+export function passStatusLabel(status: string): string {
+  switch (status) {
+    case 'ACTIVE':
+      return 'Идэвхтэй';
+    case 'USED':
+      return 'Ашигласан';
+    case 'EXPIRED':
+      return 'Хугацаа дууссан';
+    case 'CANCELLED':
+      return 'Цуцлагдсан';
+    default:
+      return status;
+  }
+}
+
+export function notificationTypeLabel(type: string): string {
+  switch (type) {
+    case 'INVOICE':
+      return 'Нэхэмжлэл';
+    case 'PAYMENT':
+      return 'Төлбөр';
+    case 'MAINTENANCE':
+      return 'Засвар';
+    case 'ANNOUNCEMENT':
+      return 'Зарлал';
+    case 'GATE':
+      return 'Гацаа';
+    case 'SYSTEM':
+      return 'Систем';
+    default:
+      return type;
+  }
+}
+
+export function barrierStatusLabel(status: string): string {
+  switch (status) {
+    case 'PENDING':
+      return 'Хүлээгдэж буй';
+    case 'PROCESSING':
+      return 'Боловсруулж байна';
+    case 'COMPLETED':
+      return 'Дууссан';
+    case 'FAILED':
+      return 'Амжилтгүй';
+    default:
+      return status;
   }
 }
 

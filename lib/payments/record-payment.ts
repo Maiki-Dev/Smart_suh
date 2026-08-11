@@ -13,6 +13,7 @@ import {
 } from '@/lib/queries/invoices';
 import { createNotification } from '@/lib/queries/notifications';
 import { createPayment } from '@/lib/queries/payments';
+import { recalculateVehicleAccess } from '@/lib/gate/vehicle-access-service';
 import type { Payment, PaymentMethod } from '@/types';
 
 export interface RecordPaymentInput {
@@ -31,6 +32,7 @@ export interface RecordPaymentResult {
   invoiceId: string;
   apartmentDebt: number;
   provider: string;
+  vehicleAccessChanged: boolean;
 }
 
 async function notifyApartmentPayment(
@@ -154,11 +156,18 @@ export async function recordPayment(input: RecordPaymentInput): Promise<RecordPa
       tx,
     );
 
+    const vehicleAccess = await recalculateVehicleAccess(input.apartmentId, {
+      actorId: input.createdBy ?? null,
+      triggeredBy: 'payment-recorded',
+      client: tx,
+    });
+
     return {
       payment,
       invoiceId: input.invoiceId,
       apartmentDebt,
       provider: provider.name,
+      vehicleAccessChanged: vehicleAccess?.changed ?? false,
     };
   });
 }

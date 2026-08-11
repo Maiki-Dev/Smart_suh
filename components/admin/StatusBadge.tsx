@@ -66,3 +66,39 @@ export function paymentStatusTone(status: string): keyof typeof toneClasses {
       return 'zinc';
   }
 }
+
+export function gateAccessTone(enabled: boolean): keyof typeof toneClasses {
+  return enabled ? 'emerald' : 'rose';
+}
+
+export function maintenanceStatusTone(status: string): keyof typeof toneClasses {
+  switch (status) {
+    case 'OPEN':
+      return 'sky';
+    case 'IN_PROGRESS':
+      return 'amber';
+    case 'COMPLETED':
+      return 'emerald';
+    case 'CANCELLED':
+      return 'zinc';
+    case 'ON_HOLD':
+      return 'violet';
+    default:
+      return 'zinc';
+  }
+}
+
+export function maintenancePriorityTone(priority: string): keyof typeof toneClasses {
+  switch (priority) {
+    case 'CRITICAL':
+      return 'rose';
+    case 'HIGH':
+      return 'amber';
+    case 'MEDIUM':
+      return 'sky';
+    case 'LOW':
+      return 'zinc';
+    default:
+      return 'zinc';
+  }
+}

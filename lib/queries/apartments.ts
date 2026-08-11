@@ -387,3 +387,36 @@ export async function deleteApartment(id: string): Promise<boolean> {
     return (rowCount ?? 0) > 0;
   });
 }
+
+export async function getApartmentDeleteBlockers(
+  apartmentId: string,
+  client?: DbClient,
+): Promise<string[]> {
+  const { rows } = await query<{
+    invoice_count: string;
+    payment_count: string;
+    active_residents: string;
+  }>(
+    `
+      SELECT
+        (SELECT COUNT(*)::text FROM invoices WHERE apartment_id = $1) AS invoice_count,
+        (SELECT COUNT(*)::text FROM payments WHERE apartment_id = $1) AS payment_count,
+        (SELECT COUNT(*)::text FROM residents WHERE apartment_id = $1 AND status = 'ACTIVE') AS active_residents
+    `,
+    [apartmentId],
+    client,
+  );
+
+  const r = rows[0];
+  const blockers: string[] = [];
+  if (parseInt(r?.invoice_count ?? '0', 10) > 0) {
+    blockers.push('нэхэмжлэл байна');
+  }
+  if (parseInt(r?.payment_count ?? '0', 10) > 0) {
+    blockers.push('төлбөрийн түүх байна');
+  }
+  if (parseInt(r?.active_residents ?? '0', 10) > 0) {
+    blockers.push('идэвхтэй оршин суугч байна');
+  }
+  return blockers;
+}

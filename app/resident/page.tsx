@@ -222,7 +222,7 @@ function ApartmentHeaderCard({
       <div className="absolute right-4 top-4 size-28 rounded-full bg-gradient-to-br from-emerald-500/10 to-teal-500/0 blur-2xl pointer-events-none" />
       <div className="relative flex items-center gap-2 mb-2">
         <span className="text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-medium">
-          Оршин сuuгч
+          Оршин суугч
         </span>
         <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
           Идэвхтэй
@@ -241,7 +241,7 @@ function ApartmentHeaderCard({
         <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold flex items-center gap-1.5">
             <HomeIcon className="size-3" />
-            Миний орон сuuц
+            Миний орон сууц
           </span>
           <span className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
             {apt ? `${apt.tower ?? ''} · ${apt.apartment_number}`.replace(/^ · /, '') : '—'}

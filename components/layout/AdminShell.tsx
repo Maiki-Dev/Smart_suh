@@ -43,7 +43,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: 'Нэхэмжлэл',    href: '/admin/invoices',   icon: FileText,        segment: 'invoices' },
   { label: 'Төлбөр',       href: '/admin/payments',   icon: CreditCard,      segment: 'payments' },
   { label: 'Машин',        href: '/admin/vehicles',   icon: Car,             segment: 'vehicles' },
-  { label: 'Гацаа',        href: '/admin/gate-access', icon: Waypoints,      segment: 'gate-access' },
+  { label: 'Зогсоол',        href: '/admin/gate-access', icon: Waypoints,      segment: 'gate-access' },
   { label: 'Зочин',        href: '/admin/visitors',   icon: UserPlus,        segment: 'visitors' },
   { label: 'Засвар',       href: '/admin/maintenance', icon: Wrench,         segment: 'maintenance' },
   { label: 'Зарлал',       href: '/admin/announcements', icon: Megaphone,    segment: 'announcements' },

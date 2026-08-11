@@ -168,13 +168,132 @@ export async function createVehicle(input: {
   return rows[0];
 }
 
+export async function getDefaultVehicleForApartment(
+  apartmentId: string,
+  client?: DbClient,
+): Promise<Vehicle | null> {
+  const { rows } = await query<Vehicle>(
+    `${SELECT_SQL}
+     WHERE apartment_id = $1 AND active = TRUE
+     ORDER BY gate_access DESC, created_at ASC
+     LIMIT 1`,
+    [apartmentId],
+    client,
+  );
+  return rows[0] ?? null;
+}
+
+export interface VehicleAdminRow extends Vehicle {
+  apartment_number: string;
+  building_name: string;
+  tower: string | null;
+}
+
+const ADMIN_LIST_SQL = `
+  SELECT v.id, v.organization_id, v.apartment_id, v.plate_number, v.vehicle_type,
+         v.owner_name, v.rfid_number, v.active, v.gate_access,
+         v.access_started_at, v.access_expires_at, v.disabled_at, v.disabled_reason,
+         v.created_at, v.updated_at,
+         a.apartment_number, b.name AS building_name, a.tower
+    FROM vehicles v
+    JOIN apartments a ON a.id = v.apartment_id
+    JOIN buildings b ON b.id = a.building_id
+`;
+
+export async function listVehiclesAdminView(
+  organizationId: string | null,
+  opts: PaginationOptions & {
+    active?: boolean;
+    gate_access?: boolean;
+    apartment_id?: string;
+    search?: string;
+  } = {},
+): Promise<ListResult<VehicleAdminRow>> {
+  const {
+    limit = 100,
+    offset = 0,
+    orderBy = 'plate_number',
+    orderDirection = 'ASC',
+    active,
+    gate_access,
+    apartment_id,
+    search,
+  } = opts;
+
+  const safeOrder = ['plate_number', 'vehicle_type', 'owner_name', 'active', 'gate_access', 'created_at', 'apartment_number'].includes(orderBy)
+    ? orderBy
+    : 'plate_number';
+  const safeDir = orderDirection === 'DESC' ? 'DESC' : 'ASC';
+  const orderColumn = safeOrder === 'apartment_number' ? 'a.apartment_number' : `v."${safeOrder}"`;
+
+  const clauses: string[] = [];
+  const params: unknown[] = [];
+  let idx = 1;
+
+  if (organizationId) {
+    clauses.push(`v.organization_id = $${idx++}`);
+    params.push(organizationId);
+  }
+  if (active !== undefined) {
+    clauses.push(`v.active = $${idx++}`);
+    params.push(active);
+  }
+  if (gate_access !== undefined) {
+    clauses.push(`v.gate_access = $${idx++}`);
+    params.push(gate_access);
+  }
+  if (apartment_id) {
+    clauses.push(`v.apartment_id = $${idx++}`);
+    params.push(apartment_id);
+  }
+  if (search?.trim()) {
+    const like = `%${search.trim().toUpperCase()}%`;
+    clauses.push(`(
+      UPPER(v.plate_number) LIKE $${idx}
+      OR UPPER(COALESCE(v.owner_name, '')) LIKE $${idx}
+      OR UPPER(COALESCE(v.rfid_number, '')) LIKE $${idx}
+      OR UPPER(a.apartment_number) LIKE $${idx}
+      OR UPPER(b.name) LIKE $${idx}
+    )`);
+    params.push(like);
+    idx++;
+  }
+
+  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+
+  const [dataRes, countRes] = await Promise.all([
+    query<VehicleAdminRow>(
+      `${ADMIN_LIST_SQL} ${where} ORDER BY ${orderColumn} ${safeDir} LIMIT $${idx++} OFFSET $${idx++}`,
+      [...params, limit, offset],
+    ),
+    query<{ count: string }>(
+      `
+        SELECT COUNT(*)::text AS count
+          FROM vehicles v
+          JOIN apartments a ON a.id = v.apartment_id
+          JOIN buildings b ON b.id = a.building_id
+          ${where}
+      `,
+      params,
+    ),
+  ]);
+
+  return {
+    data: dataRes.rows,
+    total: parseInt(countRes.rows[0].count, 10),
+    limit,
+    offset,
+  };
+}
+
 export async function updateVehicle(
   id: string,
   input: Partial<
     Omit<Vehicle, 'id' | 'organization_id' | 'apartment_id' | 'created_at' | 'updated_at'>
   >,
+  client?: DbClient,
 ): Promise<Vehicle | null> {
-  const existing = await getVehicleById(id);
+  const existing = await getVehicleById(id, client);
   if (!existing) return null;
 
   const merged = {
@@ -184,10 +303,10 @@ export async function updateVehicle(
     rfid_number: input.rfid_number ?? existing.rfid_number,
     active: input.active ?? existing.active,
     gate_access: input.gate_access ?? existing.gate_access,
-    access_started_at: input.access_started_at ?? existing.access_started_at,
-    access_expires_at: input.access_expires_at ?? existing.access_expires_at,
-    disabled_at: input.disabled_at ?? existing.disabled_at,
-    disabled_reason: input.disabled_reason ?? existing.disabled_reason,
+    access_started_at: input.access_started_at !== undefined ? input.access_started_at : existing.access_started_at,
+    access_expires_at: input.access_expires_at !== undefined ? input.access_expires_at : existing.access_expires_at,
+    disabled_at: input.disabled_at !== undefined ? input.disabled_at : existing.disabled_at,
+    disabled_reason: input.disabled_reason !== undefined ? input.disabled_reason : existing.disabled_reason,
   };
 
   const { rows } = await query<Vehicle>(
@@ -216,6 +335,7 @@ export async function updateVehicle(
       merged.disabled_reason,
       id,
     ],
+    client,
   );
   return rows[0] ?? null;
 }

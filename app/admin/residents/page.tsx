@@ -10,7 +10,7 @@ import type { ResidentStatus } from '@/types';
 export default async function AdminResidentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; apartment?: string; new?: string }>;
 }) {
   const params = await searchParams;
   const ctx = await requireAdminRole();
@@ -42,6 +42,8 @@ export default async function AdminResidentsPage({
             status: params.status,
           }}
           total={residentsRes.total}
+          defaultApartmentId={params.apartment || undefined}
+          openCreateOnMount={params.new === '1'}
         />
       </AdminShell>
     </>

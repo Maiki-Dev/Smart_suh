@@ -42,6 +42,30 @@ export async function listBuildingsByOrganization(
   };
 }
 
+export async function getBuildingByName(
+  organizationId: string,
+  name: string,
+  client?: DbClient,
+): Promise<Building | null> {
+  const { rows } = await query<Building>(
+    `${SELECT_SQL} WHERE organization_id = $1 AND LOWER(TRIM(name)) = LOWER(TRIM($2)) LIMIT 1`,
+    [organizationId, name],
+    client,
+  );
+  return rows[0] ?? null;
+}
+
+export async function findOrCreateBuildingByName(
+  organizationId: string,
+  name: string,
+  client?: DbClient,
+): Promise<Building> {
+  const trimmed = name.trim();
+  const existing = await getBuildingByName(organizationId, trimmed, client);
+  if (existing) return existing;
+  return createBuilding({ organization_id: organizationId, name: trimmed, client });
+}
+
 export async function createBuilding(input: {
   organization_id: string;
   name: string;

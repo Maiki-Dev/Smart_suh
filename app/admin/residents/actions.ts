@@ -214,6 +214,29 @@ export async function activateResidentAction(residentId: string): Promise<Reside
   return setResidentStatusAction(residentId, 'ACTIVE');
 }
 
+export async function deleteResidentAction(residentId: string): Promise<ResidentActionState> {
+  const ctx = await requireAdminRole();
+  const resident = await getResidentById(residentId);
+  if (!resident) return { status: 'error', message: 'Оршин суугч олдсонгүй' };
+  assertOrganizationAccess(ctx, resident.organization_id);
+
+  if (resident.status === 'ACTIVE') {
+    return {
+      status: 'error',
+      message: 'Идэвхтэй оршин суугчийг шууд устгах боломжгүй. Эхлээд идэвхгүй болгоно уу.',
+    };
+  }
+
+  const { deleteResident } = await import('@/lib/queries/residents');
+  const deleted = await deleteResident(residentId);
+  if (!deleted) return { status: 'error', message: 'Устгахад алдаа гарлаа' };
+
+  revalidatePath('/admin/residents');
+  revalidatePath('/admin/apartments');
+  revalidatePath(`/admin/apartments/${resident.apartment_id}`);
+  return { status: 'success', message: 'Оршин суугч бүрмосон устгагдлаа' };
+}
+
 export async function listApartmentOptionsAction() {
   const ctx = await requireAdminRole();
   const orgId = getScopedOrganizationId(ctx) ?? ctx.user.organization_id;

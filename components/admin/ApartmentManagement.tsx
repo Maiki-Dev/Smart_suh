@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Eye, Ban, CheckCircle2 } from "lucide-react";
-import type { Building } from "@/types";
 import type { ApartmentAdminRow } from "@/lib/queries/apartments";
 import {
   createApartmentAction,
@@ -39,11 +38,9 @@ type Filters = {
 
 function ApartmentFormDialog({
   onClose,
-  buildings,
   apartment,
 }: {
   onClose: () => void;
-  buildings: Building[];
   apartment?: ApartmentAdminRow | null;
 }) {
   const router = useRouter();
@@ -78,23 +75,17 @@ function ApartmentFormDialog({
         </div>
         <div className="grid gap-4 px-5 py-4 sm:grid-cols-2">
           <div className="sm:col-span-2 flex flex-col gap-2">
-            <Label htmlFor="building_id">Барилга</Label>
-            <select
-              id="building_id"
-              name="building_id"
-              defaultValue={apartment?.building_id ?? ""}
+            <Label htmlFor="building_name">Барилга</Label>
+            <Input
+              id="building_name"
+              name="building_name"
+              defaultValue={apartment?.building_name ?? ""}
+              placeholder="Жишээ нь: Tower A, Блок 1..."
               required
-              className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
-            >
-              <option value="" disabled>
-                Сонгох...
-              </option>
-              {buildings.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+            />
+            {state.fieldErrors?.building_name?.[0] ? (
+              <p className="text-xs text-destructive">{state.fieldErrors.building_name[0]}</p>
+            ) : null}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="tower">Цамхаг</Label>
@@ -120,11 +111,7 @@ function ApartmentFormDialog({
               <p className="text-xs text-destructive">{state.fieldErrors.apartment_number[0]}</p>
             ) : null}
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="area_m2">Талбай (м²)</Label>
-            <Input id="area_m2" name="area_m2" type="number" step="0.01" defaultValue={apartment?.area_m2 ?? ""} />
-          </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="monthly_fee">Сарын төлбөр</Label>
             <Input
               id="monthly_fee"
@@ -154,12 +141,10 @@ function ApartmentFormDialog({
 
 export function ApartmentManagement({
   apartments,
-  buildings,
   filters,
   total,
 }: {
   apartments: ApartmentAdminRow[];
-  buildings: Building[];
   filters: Filters;
   total: number;
 }) {
@@ -198,18 +183,7 @@ export function ApartmentManagement({
         <CardContent className="flex flex-col gap-4">
           <form method="get" className="grid gap-3 md:grid-cols-4">
             <Input name="q" placeholder="Хайлт..." defaultValue={filters.q ?? ""} />
-            <select
-              name="building"
-              defaultValue={filters.building ?? ""}
-              className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
-            >
-              <option value="">Бүх барилга</option>
-              {buildings.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+            <Input name="building" placeholder="Барилга..." defaultValue={filters.building ?? ""} />
             <select
               name="status"
               defaultValue={filters.status ?? ""}
@@ -234,7 +208,6 @@ export function ApartmentManagement({
                   <th className="px-3 py-3">Орц</th>
                   <th className="px-3 py-3">Давхар</th>
                   <th className="px-3 py-3">Орон сууц</th>
-                  <th className="px-3 py-3">Талбай</th>
                   <th className="px-3 py-3">Сарын төлбөр</th>
                   <th className="px-3 py-3">Эзэмшигч</th>
                   <th className="px-3 py-3">Оршин суугч</th>
@@ -247,7 +220,7 @@ export function ApartmentManagement({
               <tbody>
                 {apartments.length === 0 ? (
                   <tr>
-                    <td colSpan={13} className="px-3 py-10 text-center text-zinc-500">
+                    <td colSpan={12} className="px-3 py-10 text-center text-zinc-500">
                       Орон сууц олдсонгүй
                     </td>
                   </tr>
@@ -262,7 +235,6 @@ export function ApartmentManagement({
                       <td className="px-3 py-3">{apt.entrance ?? "—"}</td>
                       <td className="px-3 py-3">{apt.floor ?? "—"}</td>
                       <td className="px-3 py-3 font-medium">{apt.apartment_number}</td>
-                      <td className="px-3 py-3">{apt.area_m2 ? `${apt.area_m2} м²` : "—"}</td>
                       <td className="px-3 py-3 tabular-nums">{formatMNT(apt.monthly_fee)}</td>
                       <td className="px-3 py-3">{apt.owner_name ?? "—"}</td>
                       <td className="px-3 py-3">{apt.resident_count}</td>
@@ -304,6 +276,7 @@ export function ApartmentManagement({
                             variant="ghost"
                             disabled={pendingId === apt.id}
                             onClick={() => toggleStatus(apt)}
+                            title={apt.status === "VACANT" ? "Идэвхжүүлэх" : "Хоосон болгох (устгах биш)"}
                           >
                             {apt.status === "VACANT" ? (
                               <CheckCircle2 className="size-4 text-emerald-600" />
@@ -329,7 +302,6 @@ export function ApartmentManagement({
             setDialogOpen(false);
             setEditing(null);
           }}
-          buildings={buildings}
           apartment={editing}
         />
       ) : null}

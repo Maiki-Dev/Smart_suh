@@ -462,6 +462,7 @@ export async function getInvoiceForMonth(
 export async function listInvoicesByApartment(
   apartmentId: string,
   opts: PaginationOptions & { status?: InvoiceStatus } = {},
+  client?: DbClient,
 ): Promise<ListResult<Invoice>> {
   const { limit = 50, offset = 0, orderBy = 'billing_year', orderDirection = 'DESC', status } = opts;
   const safeOrder = ['invoice_number', 'billing_year', 'billing_month', 'amount', 'status', 'due_date', 'created_at'].includes(orderBy)
@@ -488,10 +489,12 @@ export async function listInvoicesByApartment(
     query<Invoice>(
       `${SELECT_SQL} ${where} ${order} LIMIT $${idx++} OFFSET $${idx++}`,
       [...params, limit, offset],
+      client,
     ),
     query<{ count: string }>(
       `SELECT COUNT(*)::text AS count FROM invoices ${where}`,
       params,
+      client,
     ),
   ]);
 

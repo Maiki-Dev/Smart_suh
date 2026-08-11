@@ -66,7 +66,10 @@ export async function recordPaymentAction(
     revalidatePath('/admin/invoices');
     revalidatePath(`/admin/invoices/${invoice.id}`);
     revalidatePath('/resident/payments');
+    revalidatePath('/resident/vehicle');
     revalidatePath('/admin/apartments');
+    revalidatePath('/admin/vehicles');
+    revalidatePath('/admin/gate-access');
     return {
       status: 'success',
       message: `Төлбөр бүртгэгдлээ. Орон сууцны үлдэгдэл: ${result.apartmentDebt.toLocaleString('mn-MN')}₮`,

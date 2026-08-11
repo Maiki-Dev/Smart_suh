@@ -8,11 +8,13 @@ import {
   getScopedOrganizationId,
   resolveOrganizationIdForCreate,
 } from '@/lib/admin/org-scope';
-import { getBuildingById } from '@/lib/queries/buildings';
+import { findOrCreateBuildingByName } from '@/lib/queries/buildings';
 import {
   createApartment,
+  deleteApartment,
   getApartmentById,
   getApartmentByNumber,
+  getApartmentDeleteBlockers,
   updateApartment,
 } from '@/lib/queries/apartments';
 import type { ApartmentStatus } from '@/types';
@@ -29,7 +31,7 @@ const emptyToNull = (value: unknown) => {
 };
 
 const apartmentSchema = z.object({
-  building_id: z.string().uuid('Барилга сонгоно уу'),
+  building_name: z.string().trim().min(1, 'Барилга оруулна уу').max(255),
   tower: z.preprocess(emptyToNull, z.string().max(50).nullable().optional()),
   entrance: z.preprocess(emptyToNull, z.string().max(50).nullable().optional()),
   floor: z.preprocess(
@@ -37,10 +39,6 @@ const apartmentSchema = z.object({
     z.number().int().nullable().optional(),
   ),
   apartment_number: z.string().trim().min(1, 'Орон сууцны дугаар оруулна уу').max(50),
-  area_m2: z.preprocess(
-    (value) => (value === '' || value === null || value === undefined ? null : Number(value)),
-    z.number().positive('Талбай 0-ээс их байх ёстой').nullable().optional(),
-  ),
   monthly_fee: z.preprocess(
     (value) => Number(value ?? 0),
     z.number().min(0, 'Сарын төлбөр сөрөг байж болохгүй'),
@@ -51,12 +49,8 @@ function formToObject(formData: FormData): Record<string, FormDataEntryValue> {
   return Object.fromEntries(formData.entries());
 }
 
-async function validateBuildingAccess(buildingId: string, organizationId: string) {
-  const building = await getBuildingById(buildingId);
-  if (!building || building.organization_id !== organizationId) {
-    throw new Error('Барилга олдсонгүй');
-  }
-  return building;
+async function resolveBuilding(organizationId: string, buildingName: string) {
+  return findOrCreateBuildingByName(organizationId, buildingName);
 }
 
 export async function createApartmentAction(
@@ -76,11 +70,8 @@ export async function createApartmentAction(
   }
 
   try {
-    await validateBuildingAccess(parsed.data.building_id, organizationId);
-    const duplicate = await getApartmentByNumber(
-      parsed.data.building_id,
-      parsed.data.apartment_number,
-    );
+    const building = await resolveBuilding(organizationId, parsed.data.building_name);
+    const duplicate = await getApartmentByNumber(building.id, parsed.data.apartment_number);
     if (duplicate) {
       return {
         status: 'error',
@@ -91,12 +82,12 @@ export async function createApartmentAction(
 
     await createApartment({
       organization_id: organizationId,
-      building_id: parsed.data.building_id,
+      building_id: building.id,
       tower: parsed.data.tower ?? null,
       entrance: parsed.data.entrance ?? null,
       floor: parsed.data.floor ?? null,
       apartment_number: parsed.data.apartment_number,
-      area_m2: parsed.data.area_m2 ?? null,
+      area_m2: null,
       monthly_fee: parsed.data.monthly_fee,
       status: 'OCCUPIED',
     });
@@ -133,11 +124,8 @@ export async function updateApartmentAction(
   }
 
   try {
-    await validateBuildingAccess(parsed.data.building_id, existing.organization_id);
-    const duplicate = await getApartmentByNumber(
-      parsed.data.building_id,
-      parsed.data.apartment_number,
-    );
+    const building = await resolveBuilding(existing.organization_id, parsed.data.building_name);
+    const duplicate = await getApartmentByNumber(building.id, parsed.data.apartment_number);
     if (duplicate && duplicate.id !== apartmentId) {
       return {
         status: 'error',
@@ -147,12 +135,11 @@ export async function updateApartmentAction(
     }
 
     await updateApartment(apartmentId, {
-      building_id: parsed.data.building_id,
+      building_id: building.id,
       tower: parsed.data.tower ?? null,
       entrance: parsed.data.entrance ?? null,
       floor: parsed.data.floor ?? null,
       apartment_number: parsed.data.apartment_number,
-      area_m2: parsed.data.area_m2 ?? null,
       monthly_fee: parsed.data.monthly_fee,
     });
 
@@ -191,6 +178,27 @@ export async function deactivateApartmentAction(apartmentId: string): Promise<Ap
 
 export async function activateApartmentAction(apartmentId: string): Promise<ApartmentActionState> {
   return setApartmentStatusAction(apartmentId, 'OCCUPIED');
+}
+
+export async function deleteApartmentAction(apartmentId: string): Promise<ApartmentActionState> {
+  const ctx = await requireAdminRole();
+  const existing = await getApartmentById(apartmentId);
+  if (!existing) return { status: 'error', message: 'Орон сууц олдсонгүй' };
+  assertOrganizationAccess(ctx, existing.organization_id);
+
+  const blockers = await getApartmentDeleteBlockers(apartmentId);
+  if (blockers.length > 0) {
+    return {
+      status: 'error',
+      message: `Устгах боломжгүй: ${blockers.join(', ')}. Эхлээд оршин суугчийг идэвхгүй болгоод, төлбөрийн түүхгүй эсэхийг шалгана уу.`,
+    };
+  }
+
+  const deleted = await deleteApartment(apartmentId);
+  if (!deleted) return { status: 'error', message: 'Устгахад алдаа гарлаа' };
+
+  revalidatePath('/admin/apartments');
+  return { status: 'success', message: 'Орон сууц бүрмосон устгагдлаа' };
 }
 
 export async function getApartmentsForSelectAction() {

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Ban, CheckCircle2, Crown } from "lucide-react";
+import { Plus, Pencil, Ban, CheckCircle2, Crown, Trash2 } from "lucide-react";
 import type { ApartmentAdminRow } from "@/lib/queries/apartments";
 import type { ResidentAdminRow } from "@/lib/queries/residents";
 import {
@@ -11,6 +11,7 @@ import {
   deactivateResidentAction,
   activateResidentAction,
   setResidentOwnerAction,
+  deleteResidentAction,
   type ResidentActionState,
 } from "@/app/admin/residents/actions";
 import { Button } from "@/components/ui/button";
@@ -34,10 +35,12 @@ function ResidentFormDialog({
   onClose,
   apartments,
   resident,
+  defaultApartmentId,
 }: {
   onClose: () => void;
   apartments: ApartmentAdminRow[];
   resident?: ResidentAdminRow | null;
+  defaultApartmentId?: string;
 }) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -75,7 +78,7 @@ function ResidentFormDialog({
             <select
               id="apartment_id"
               name="apartment_id"
-              defaultValue={resident?.apartment_id ?? ""}
+              defaultValue={resident?.apartment_id ?? defaultApartmentId ?? ""}
               required
               className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
             >
@@ -109,7 +112,7 @@ function ResidentFormDialog({
             <input
               type="checkbox"
               name="is_owner"
-              defaultChecked={resident?.is_owner ?? false}
+              defaultChecked={resident?.is_owner ?? !!defaultApartmentId}
               className="size-4 rounded border-zinc-300"
             />
             Эзэмшигч болгох
@@ -136,14 +139,18 @@ export function ResidentManagement({
   apartments,
   filters,
   total,
+  defaultApartmentId,
+  openCreateOnMount = false,
 }: {
   residents: ResidentAdminRow[];
   apartments: ApartmentAdminRow[];
   filters: Filters;
   total: number;
+  defaultApartmentId?: string;
+  openCreateOnMount?: boolean;
 }) {
   const router = useRouter();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(openCreateOnMount);
   const [editing, setEditing] = useState<ResidentAdminRow | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
@@ -266,6 +273,7 @@ export function ResidentManagement({
                                   : deactivateResidentAction,
                               )
                             }
+                            title={resident.status === "INACTIVE" ? "Идэвхжүүлэх" : "Идэвхгүй болгох (устгах биш)"}
                           >
                             {resident.status === "INACTIVE" ? (
                               <CheckCircle2 className="size-4 text-emerald-600" />
@@ -273,6 +281,20 @@ export function ResidentManagement({
                               <Ban className="size-4 text-rose-600" />
                             )}
                           </Button>
+                          {resident.status === "INACTIVE" ? (
+                            <Button
+                              size="icon-sm"
+                              variant="ghost"
+                              disabled={pendingId === resident.id}
+                              onClick={() => {
+                                if (!confirm("Энэ оршин суугчийг бүрмосон устгах уу?")) return;
+                                runAction(resident.id, deleteResidentAction);
+                              }}
+                              title="Бүрмосон устгах"
+                            >
+                              <Trash2 className="size-4 text-rose-600" />
+                            </Button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -293,6 +315,7 @@ export function ResidentManagement({
           }}
           apartments={apartments}
           resident={editing}
+          defaultApartmentId={defaultApartmentId}
         />
       ) : null}
     </div>

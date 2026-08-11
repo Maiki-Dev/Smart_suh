@@ -1,13 +1,16 @@
-// @ts-nocheck
 import Module from 'node:module';
 
-const originalLoad = Module._load as (
+type ModuleLoad = (
   request: string,
   parent: NodeModule,
   isMain: boolean,
 ) => unknown;
 
-Module._load = function patchedLoad(
+// Node internal hook used only in CLI test preload scripts.
+const moduleWithLoad = Module as typeof Module & { _load: ModuleLoad };
+const originalLoad = moduleWithLoad._load;
+
+moduleWithLoad._load = function patchedLoad(
   request: string,
   parent: NodeModule,
   isMain: boolean,

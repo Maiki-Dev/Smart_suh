@@ -122,15 +122,15 @@ export default async function AdminPage() {
 
   const statsArr: Array<[keyof AdminOverviewStats, MetricCardProps]> = [
     ['total_apartments', {
-      label: 'Нийт орон сuuц',
+      label: 'Нийт орон сууц',
       value: stats.total_apartments,
-      sub: `${stats.total_residents} оршин сuuгч нийт`,
+      sub: `${stats.total_residents} оршин суугч нийт`,
       accent: 'border-l-emerald-500',
       icon: Building2Icon,
       iconClassName: 'text-emerald-500',
     }],
     ['total_residents', {
-      label: 'Нийт оршин сuuгч',
+      label: 'Нийт оршин суугч',
       value: stats.total_residents,
       sub: 'Идэвхтэй төлөвтэй',
       accent: 'border-l-sky-500',
@@ -157,7 +157,7 @@ export default async function AdminPage() {
     ['active_vehicles', {
       label: 'Идэвхтэй машин',
       value: stats.active_vehicles,
-      sub: 'Гацааны эрх идэвхтэй',
+      sub: 'Зогсоолын эрх идэвхтэй',
       accent: 'border-l-teal-500',
       icon: CarIcon,
       iconClassName: 'text-teal-500',

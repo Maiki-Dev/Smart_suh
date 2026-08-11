@@ -149,6 +149,7 @@ export async function createVisitorPass(input: {
 export async function updateVisitorPassStatus(
   id: string,
   status: PassStatus,
+  client?: DbClient,
 ): Promise<VisitorPass | null> {
   const { rows } = await query<VisitorPass>(
     `
@@ -159,8 +160,115 @@ export async function updateVisitorPassStatus(
                  plate_number, valid_from, valid_until, qr_code, status, created_at
     `,
     [status, id],
+    client,
   );
   return rows[0] ?? null;
+}
+
+export interface VisitorPassAdminRow extends VisitorPass {
+  apartment_number: string;
+  building_name: string;
+  resident_name: string | null;
+}
+
+export async function listVisitorPassesAdminView(
+  organizationId: string | null,
+  opts: PaginationOptions & {
+    status?: PassStatus;
+    apartment_id?: string;
+    search?: string;
+    date_from?: string;
+    date_to?: string;
+  } = {},
+): Promise<ListResult<VisitorPassAdminRow>> {
+  const {
+    limit = 100,
+    offset = 0,
+    orderBy = 'created_at',
+    orderDirection = 'DESC',
+    status,
+    apartment_id,
+    search,
+    date_from,
+    date_to,
+  } = opts;
+
+  const safeOrder = ['visitor_name', 'valid_from', 'valid_until', 'status', 'created_at'].includes(orderBy)
+    ? orderBy
+    : 'created_at';
+  const safeDir = orderDirection === 'ASC' ? 'ASC' : 'DESC';
+
+  const clauses: string[] = [];
+  const params: unknown[] = [];
+  let idx = 1;
+
+  if (organizationId) {
+    clauses.push(`vp.organization_id = $${idx++}`);
+    params.push(organizationId);
+  }
+  if (status) {
+    clauses.push(`vp.status = $${idx++}::pass_status`);
+    params.push(status);
+  }
+  if (apartment_id) {
+    clauses.push(`vp.apartment_id = $${idx++}`);
+    params.push(apartment_id);
+  }
+  if (search?.trim()) {
+    clauses.push(`(
+      vp.visitor_name ILIKE $${idx}
+      OR vp.phone ILIKE $${idx}
+      OR vp.plate_number ILIKE $${idx}
+      OR apt.apartment_number ILIKE $${idx}
+    )`);
+    params.push(`%${search.trim()}%`);
+    idx += 1;
+  }
+  if (date_from) {
+    clauses.push(`vp.valid_from >= $${idx++}::timestamptz`);
+    params.push(date_from);
+  }
+  if (date_to) {
+    clauses.push(`vp.valid_until <= $${idx++}::timestamptz`);
+    params.push(date_to);
+  }
+
+  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+
+  const sql = `
+    SELECT vp.id, vp.organization_id, vp.apartment_id, vp.created_by, vp.visitor_name,
+           vp.phone, vp.plate_number, vp.valid_from, vp.valid_until, vp.qr_code, vp.status,
+           vp.created_at,
+           apt.apartment_number,
+           b.name AS building_name,
+           TRIM(CONCAT(r.first_name, ' ', r.last_name)) AS resident_name
+      FROM visitor_passes vp
+      JOIN apartments apt ON apt.id = vp.apartment_id
+      JOIN buildings b ON b.id = apt.building_id
+      LEFT JOIN residents r ON r.apartment_id = vp.apartment_id AND r.status = 'ACTIVE' AND r.user_id = vp.created_by
+      ${where}
+     ORDER BY vp."${safeOrder}" ${safeDir}
+     LIMIT $${idx++} OFFSET $${idx++}
+  `;
+
+  const countSql = `
+    SELECT COUNT(*)::text AS count
+      FROM visitor_passes vp
+      JOIN apartments apt ON apt.id = vp.apartment_id
+      ${where}
+  `;
+
+  const [dataRes, countRes] = await Promise.all([
+    query<VisitorPassAdminRow>(sql, [...params, limit, offset]),
+    query<{ count: string }>(countSql, params),
+  ]);
+
+  return {
+    data: dataRes.rows,
+    total: parseInt(countRes.rows[0].count, 10),
+    limit,
+    offset,
+  };
 }
 
 export { withTransaction };

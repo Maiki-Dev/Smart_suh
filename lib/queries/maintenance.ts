@@ -160,8 +160,9 @@ export async function updateMaintenanceRequest(
   input: Partial<
     Omit<MaintenanceRequest, 'id' | 'organization_id' | 'apartment_id' | 'created_at' | 'updated_at'>
   >,
+  client?: DbClient,
 ): Promise<MaintenanceRequest | null> {
-  const existing = await getMaintenanceRequestById(id);
+  const existing = await getMaintenanceRequestById(id, client);
   if (!existing) return null;
 
   const merged = {
@@ -177,7 +178,8 @@ export async function updateMaintenanceRequest(
     `
       UPDATE maintenance_requests
          SET created_by = $1, title = $2, description = $3,
-             category = $4::maint_cat, priority = $5::maint_priority, status = $6::maint_status
+             category = $4::maint_cat, priority = $5::maint_priority, status = $6::maint_status,
+             updated_at = NOW()
        WHERE id = $7
        RETURNING id, organization_id, apartment_id, created_by, title, description,
                  category, priority, status, created_at, updated_at
@@ -191,8 +193,116 @@ export async function updateMaintenanceRequest(
       merged.status,
       id,
     ],
+    client,
   );
   return rows[0] ?? null;
+}
+
+export interface MaintenanceAdminRow extends MaintenanceRequest {
+  apartment_number: string;
+  building_name: string;
+  tower: string | null;
+  resident_name: string | null;
+  assigned_operator_name: string | null;
+}
+
+export async function listMaintenanceAdminView(
+  organizationId: string | null,
+  opts: PaginationOptions & {
+    category?: MaintenanceCategory;
+    priority?: MaintenancePriority;
+    status?: MaintenanceStatus;
+    apartment_id?: string;
+    search?: string;
+  } = {},
+): Promise<ListResult<MaintenanceAdminRow>> {
+  const {
+    limit = 100,
+    offset = 0,
+    orderBy = 'created_at',
+    orderDirection = 'DESC',
+    category,
+    priority,
+    status,
+    apartment_id,
+    search,
+  } = opts;
+
+  const safeOrder = ['title', 'category', 'priority', 'status', 'created_at', 'updated_at'].includes(orderBy)
+    ? orderBy
+    : 'created_at';
+  const safeDir = orderDirection === 'ASC' ? 'ASC' : 'DESC';
+
+  const clauses: string[] = [];
+  const params: unknown[] = [];
+  let idx = 1;
+
+  if (organizationId) {
+    clauses.push(`mr.organization_id = $${idx++}`);
+    params.push(organizationId);
+  }
+  if (category) {
+    clauses.push(`mr.category = $${idx++}::maint_cat`);
+    params.push(category);
+  }
+  if (priority) {
+    clauses.push(`mr.priority = $${idx++}::maint_priority`);
+    params.push(priority);
+  }
+  if (status) {
+    clauses.push(`mr.status = $${idx++}::maint_status`);
+    params.push(status);
+  }
+  if (apartment_id) {
+    clauses.push(`mr.apartment_id = $${idx++}`);
+    params.push(apartment_id);
+  }
+  if (search?.trim()) {
+    clauses.push(`(mr.title ILIKE $${idx} OR mr.description ILIKE $${idx})`);
+    params.push(`%${search.trim()}%`);
+    idx += 1;
+  }
+
+  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+
+  const sql = `
+    SELECT mr.id, mr.organization_id, mr.apartment_id, mr.created_by, mr.title, mr.description,
+           mr.category, mr.priority, mr.status, mr.created_at, mr.updated_at,
+           apt.apartment_number, b.name AS building_name, apt.tower,
+           TRIM(CONCAT(res.first_name, ' ', res.last_name)) AS resident_name,
+           assign.assigned_operator_name
+      FROM maintenance_requests mr
+      JOIN apartments apt ON apt.id = mr.apartment_id
+      JOIN buildings b ON b.id = apt.building_id
+      LEFT JOIN residents res ON res.apartment_id = mr.apartment_id AND res.user_id = mr.created_by
+      LEFT JOIN LATERAL (
+        SELECT TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS assigned_operator_name
+          FROM audit_logs al
+          JOIN users u ON u.id = (al.new_data->>'assigned_to')::uuid
+         WHERE al.entity_type = 'maintenance_request'
+           AND al.entity_id = mr.id
+           AND al.action = 'MAINTENANCE_ASSIGNED'
+         ORDER BY al.created_at DESC
+         LIMIT 1
+      ) assign ON TRUE
+      ${where}
+     ORDER BY mr."${safeOrder}" ${safeDir}
+     LIMIT $${idx++} OFFSET $${idx++}
+  `;
+
+  const countSql = `SELECT COUNT(*)::text AS count FROM maintenance_requests mr ${where}`;
+
+  const [dataRes, countRes] = await Promise.all([
+    query<MaintenanceAdminRow>(sql, [...params, limit, offset]),
+    query<{ count: string }>(countSql, params),
+  ]);
+
+  return {
+    data: dataRes.rows,
+    total: parseInt(countRes.rows[0].count, 10),
+    limit,
+    offset,
+  };
 }
 
 export async function listMaintenanceComments(

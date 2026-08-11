@@ -2,6 +2,12 @@ import 'server-only';
 import { query, withTransaction, type DbClient } from '@/lib/db';
 import type { GateAccessLog, GateAction, PaginationOptions, ListResult } from '@/types';
 
+export interface GateAccessLogAdminRow extends GateAccessLog {
+  plate_number: string | null;
+  apartment_number: string | null;
+  building_name: string | null;
+}
+
 const SELECT_SQL = `
   SELECT id, organization_id, vehicle_id, apartment_id, action, reason,
          triggered_by, created_at
@@ -129,6 +135,94 @@ export async function listGateAccessLogsByOrganization(
     ),
     query<{ count: string }>(
       `SELECT COUNT(*)::text AS count FROM gate_access_logs ${where}`,
+      params,
+    ),
+  ]);
+
+  return {
+    data: dataRes.rows,
+    total: parseInt(countRes.rows[0].count, 10),
+    limit,
+    offset,
+  };
+}
+
+export async function listGateAccessLogsAdminView(
+  organizationId: string | null,
+  opts: PaginationOptions & {
+    action?: GateAction;
+    apartment_id?: string;
+    search?: string;
+  } = {},
+): Promise<ListResult<GateAccessLogAdminRow>> {
+  const {
+    limit = 100,
+    offset = 0,
+    orderBy = 'created_at',
+    orderDirection = 'DESC',
+    action,
+    apartment_id,
+    search,
+  } = opts;
+
+  const safeOrder = ['action', 'created_at'].includes(orderBy) ? orderBy : 'created_at';
+  const safeDir = orderDirection === 'ASC' ? 'ASC' : 'DESC';
+  const orderColumn = safeOrder === 'created_at' ? 'g.created_at' : `g."${safeOrder}"`;
+
+  const clauses: string[] = [];
+  const params: unknown[] = [];
+  let idx = 1;
+
+  if (organizationId) {
+    clauses.push(`g.organization_id = $${idx++}`);
+    params.push(organizationId);
+  }
+  if (action) {
+    clauses.push(`g.action = $${idx++}::gate_action`);
+    params.push(action);
+  }
+  if (apartment_id) {
+    clauses.push(`g.apartment_id = $${idx++}`);
+    params.push(apartment_id);
+  }
+  if (search?.trim()) {
+    const like = `%${search.trim().toUpperCase()}%`;
+    clauses.push(`(
+      UPPER(COALESCE(v.plate_number, '')) LIKE $${idx}
+      OR UPPER(COALESCE(a.apartment_number, '')) LIKE $${idx}
+      OR UPPER(COALESCE(g.reason, '')) LIKE $${idx}
+      OR UPPER(COALESCE(g.triggered_by, '')) LIKE $${idx}
+    )`);
+    params.push(like);
+    idx++;
+  }
+
+  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+
+  const [dataRes, countRes] = await Promise.all([
+    query<GateAccessLogAdminRow>(
+      `
+        SELECT g.id, g.organization_id, g.vehicle_id, g.apartment_id, g.action, g.reason,
+               g.triggered_by, g.created_at,
+               v.plate_number, a.apartment_number, b.name AS building_name
+          FROM gate_access_logs g
+          LEFT JOIN vehicles v ON v.id = g.vehicle_id
+          LEFT JOIN apartments a ON a.id = g.apartment_id
+          LEFT JOIN buildings b ON b.id = a.building_id
+          ${where}
+         ORDER BY ${orderColumn} ${safeDir}
+         LIMIT $${idx++} OFFSET $${idx++}
+      `,
+      [...params, limit, offset],
+    ),
+    query<{ count: string }>(
+      `
+        SELECT COUNT(*)::text AS count
+          FROM gate_access_logs g
+          LEFT JOIN vehicles v ON v.id = g.vehicle_id
+          LEFT JOIN apartments a ON a.id = g.apartment_id
+          ${where}
+      `,
       params,
     ),
   ]);
