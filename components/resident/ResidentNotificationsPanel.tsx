@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { notificationTypeLabel } from "@/lib/admin/format";
+import { formatDateTimeMn } from "@/lib/format/datetime";
 import { cn } from "@/lib/utils";
 
 const initialState: ResidentNotificationActionState = { status: "idle" };
@@ -109,7 +110,7 @@ export function ResidentNotificationsPanel({
                     <p className="text-sm text-zinc-500 mt-1">{notif.message}</p>
                   ) : null}
                   <p className="text-xs text-zinc-400 mt-2">
-                    {new Date(notif.created_at).toLocaleString("mn-MN")}
+                    {formatDateTimeMn(notif.created_at)}
                   </p>
                 </div>
                 {!notif.is_read ? (

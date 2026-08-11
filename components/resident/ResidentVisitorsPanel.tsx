@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Ban, QrCode } from "lucide-react";
 import type { VisitorPass, PassStatus } from "@/types";
 import {
@@ -12,10 +12,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useActionToast } from "@/lib/hooks/use-action-toast";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { passStatusLabel } from "@/lib/admin/format";
 import { VisitorQrDisplay } from "@/components/resident/VisitorQrDisplay";
 import { cn } from "@/lib/utils";
+import {
+  defaultVisitorValidFrom,
+  defaultVisitorValidUntil,
+  formatDateTimeMn,
+} from "@/lib/format/datetime";
 
 const initialState: ResidentVisitorActionState = { status: "idle" };
 
@@ -41,19 +47,6 @@ function passTone(status: string): "emerald" | "amber" | "rose" | "zinc" {
   }
 }
 
-function defaultValidFrom() {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  return now.toISOString().slice(0, 16);
-}
-
-function defaultValidUntil() {
-  const end = new Date();
-  end.setHours(end.getHours() + 24);
-  end.setMinutes(end.getMinutes() - end.getTimezoneOffset());
-  return end.toISOString().slice(0, 16);
-}
-
 export function ResidentVisitorsPanel({
   passes,
   hasApartment,
@@ -65,6 +58,17 @@ export function ResidentVisitorsPanel({
   const [expandedQr, setExpandedQr] = useState<string | null>(null);
   const [createState, createAction, createPending] = useActionState(createVisitorPassAction, initialState);
   const [cancelState, cancelAction, cancelPending] = useActionState(cancelVisitorPassAction, initialState);
+
+  useActionToast(createState, { successMessage: "Зочны эрх үүслээ" });
+  useActionToast(cancelState, { successMessage: "Зочны эрх цуцлагдлаа" });
+
+  const [validFrom, setValidFrom] = useState("");
+  const [validUntil, setValidUntil] = useState("");
+
+  useEffect(() => {
+    setValidFrom(defaultVisitorValidFrom());
+    setValidUntil(defaultVisitorValidUntil());
+  }, []);
 
   const filtered = passes.filter((p) => p.status === activeTab);
 
@@ -104,7 +108,8 @@ export function ResidentVisitorsPanel({
                 id="valid_from"
                 name="valid_from"
                 type="datetime-local"
-                defaultValue={defaultValidFrom()}
+                value={validFrom}
+                onChange={(e) => setValidFrom(e.target.value)}
                 required
               />
             </div>
@@ -114,15 +119,11 @@ export function ResidentVisitorsPanel({
                 id="valid_until"
                 name="valid_until"
                 type="datetime-local"
-                defaultValue={defaultValidUntil()}
+                value={validUntil}
+                onChange={(e) => setValidUntil(e.target.value)}
                 required
               />
             </div>
-            {createState.message ? (
-              <p className={`text-sm ${createState.status === "error" ? "text-destructive" : "text-emerald-600"}`}>
-                {createState.message}
-              </p>
-            ) : null}
             <Button type="submit" disabled={createPending} className="w-full">
               {createPending ? "Үүсгэж байна..." : "Эрх үүсгэх"}
             </Button>
@@ -155,12 +156,6 @@ export function ResidentVisitorsPanel({
           </div>
         </CardHeader>
         <CardContent>
-          {cancelState.message && cancelState.status !== "idle" ? (
-            <p className={`text-sm mb-4 ${cancelState.status === "error" ? "text-destructive" : "text-emerald-600"}`}>
-              {cancelState.message}
-            </p>
-          ) : null}
-
           {filtered.length === 0 ? (
             <p className="py-10 text-center text-sm text-zinc-500">Энэ ангилалд зочны эрх байхгүй</p>
           ) : (
@@ -182,10 +177,10 @@ export function ResidentVisitorsPanel({
 
                   <div className="text-xs text-zinc-500 space-y-0.5">
                     <div>
-                      Эхлэх: {new Date(pass.valid_from).toLocaleString("mn-MN")}
+                      Эхлэх: {formatDateTimeMn(pass.valid_from)}
                     </div>
                     <div>
-                      Дуусах: {new Date(pass.valid_until).toLocaleString("mn-MN")}
+                      Дуусах: {formatDateTimeMn(pass.valid_until)}
                     </div>
                   </div>
 

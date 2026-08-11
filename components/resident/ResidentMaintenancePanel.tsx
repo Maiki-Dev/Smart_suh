@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { erpSelectClassName } from "@/components/ui/erp-dialog";
+import { useActionToast } from "@/lib/hooks/use-action-toast";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import {
   maintenanceCategoryLabel,
@@ -22,6 +24,7 @@ import {
   MAINTENANCE_PRIORITY_OPTIONS,
 } from "@/lib/admin/format";
 import { cn } from "@/lib/utils";
+import { formatDateTimeMn } from "@/lib/format/datetime";
 
 const initialState: ResidentMaintenanceActionState = { status: "idle" };
 
@@ -71,6 +74,10 @@ export function ResidentMaintenancePanel({
   const [commentState, commentAction, commentPending] = useActionState(addCommentAction, initialState);
   const [closeState, closeAction, closePending] = useActionState(closeMaintenanceAction, initialState);
 
+  useActionToast(createState, { successMessage: "Засварын хүсэлт илгээгдлээ" });
+  useActionToast(commentState, { successMessage: "Сэтгэгдэл нэмэгдлээ" });
+  useActionToast(closeState, { successMessage: "Хүсэлт хаагдлаа" });
+
   if (!hasApartment) {
     return (
       <Card>
@@ -109,7 +116,7 @@ export function ResidentMaintenancePanel({
                 id="category"
                 name="category"
                 defaultValue="OTHER"
-                className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                className={erpSelectClassName}
               >
                 {MAINTENANCE_CATEGORY_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -124,7 +131,7 @@ export function ResidentMaintenancePanel({
                 id="priority"
                 name="priority"
                 defaultValue="MEDIUM"
-                className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                className={erpSelectClassName}
               >
                 {MAINTENANCE_PRIORITY_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -133,11 +140,6 @@ export function ResidentMaintenancePanel({
                 ))}
               </select>
             </div>
-            {createState.message ? (
-              <p className={`text-sm ${createState.status === "error" ? "text-destructive" : "text-emerald-600"}`}>
-                {createState.message}
-              </p>
-            ) : null}
             <Button type="submit" disabled={createPending} className="w-full">
               {createPending ? "Бүртгэж байна..." : "Хүсэлт илгээх"}
             </Button>
@@ -151,19 +153,6 @@ export function ResidentMaintenancePanel({
           <p className="text-sm text-zinc-500 mt-1">Нийт {requests.length} хүсэлт</p>
         </CardHeader>
         <CardContent>
-          {(closeState.message || commentState.message) &&
-          (closeState.status !== "idle" || commentState.status !== "idle") ? (
-            <p
-              className={`text-sm mb-4 ${
-                closeState.status === "error" || commentState.status === "error"
-                  ? "text-destructive"
-                  : "text-emerald-600"
-              }`}
-            >
-              {closeState.message || commentState.message}
-            </p>
-          ) : null}
-
           {requests.length === 0 ? (
             <p className="py-10 text-center text-sm text-zinc-500">Засварын хүсэлт байхгүй</p>
           ) : (
@@ -197,7 +186,7 @@ export function ResidentMaintenancePanel({
                     <div className="flex flex-wrap gap-2 text-xs text-zinc-500">
                       <span>{maintenanceCategoryLabel(req.category)}</span>
                       <span>·</span>
-                      <span>{new Date(req.created_at).toLocaleString("mn-MN")}</span>
+                      <span>{formatDateTimeMn(req.created_at)}</span>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -241,7 +230,7 @@ export function ResidentMaintenancePanel({
                               >
                                 <p>{c.comment}</p>
                                 <p className="text-[10px] text-zinc-500 mt-1">
-                                  {new Date(c.created_at).toLocaleString("mn-MN")}
+                                  {formatDateTimeMn(c.created_at)}
                                 </p>
                               </div>
                             ))}

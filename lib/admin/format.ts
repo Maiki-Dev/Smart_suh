@@ -1,5 +1,7 @@
+const mntFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+
 export function formatMNT(value: number): string {
-  return value.toLocaleString('mn-MN') + '₮';
+  return `${mntFormatter.format(value)}₮`;
 }
 
 export function apartmentStatusLabel(status: string): string {

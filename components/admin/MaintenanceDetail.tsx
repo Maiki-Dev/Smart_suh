@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import type { MaintenanceAdminRow } from "@/lib/queries/maintenance";
 import type { MaintenanceComment, AuditLog } from "@/types";
@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { erpSelectClassName } from "@/components/ui/erp-dialog";
+import { useActionToast } from "@/lib/hooks/use-action-toast";
 import {
   StatusBadge,
   maintenancePriorityTone,
@@ -25,6 +27,7 @@ import {
   maintenanceStatusLabel,
   roleLabel,
 } from "@/lib/admin/format";
+import { formatDateTimeMn } from "@/lib/format/datetime";
 
 const initialState: MaintenanceActionState = { status: "idle" };
 
@@ -64,11 +67,10 @@ export function MaintenanceDetail({
   const router = useRouter();
   const [state, formAction, pending] = useActionState(updateMaintenanceAction, initialState);
 
-  useEffect(() => {
-    if (state.status === "success") {
-      router.refresh();
-    }
-  }, [state.status, router]);
+  useActionToast(state, {
+    onSuccess: () => router.refresh(),
+    successMessage: "Засварын хүсэлт шинэчлэгдлээ",
+  });
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
@@ -102,7 +104,7 @@ export function MaintenanceDetail({
             </div>
             <Info
               label="Бүртгэсэн"
-              value={new Date(request.created_at).toLocaleString("mn-MN")}
+              value={formatDateTimeMn(request.created_at)}
             />
             {request.description ? (
               <div className="sm:col-span-2 flex flex-col gap-1">
@@ -127,7 +129,7 @@ export function MaintenanceDetail({
                     id="status"
                     name="status"
                     defaultValue={request.status}
-                    className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                    className={erpSelectClassName}
                   >
                     {MAINTENANCE_STATUS_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -142,7 +144,7 @@ export function MaintenanceDetail({
                     id="priority"
                     name="priority"
                     defaultValue={request.priority}
-                    className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                    className={erpSelectClassName}
                   >
                     {MAINTENANCE_PRIORITY_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -157,7 +159,7 @@ export function MaintenanceDetail({
                     id="assignedTo"
                     name="assignedTo"
                     defaultValue={assignedToId ?? ""}
-                    className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                    className={erpSelectClassName}
                   >
                     <option value="">Сонгохгүй</option>
                     {operators.map((op) => (
@@ -176,13 +178,6 @@ export function MaintenanceDetail({
                   />
                 </div>
               </div>
-              {state.message ? (
-                <p
-                  className={`text-sm ${state.status === "error" ? "text-destructive" : "text-emerald-600"}`}
-                >
-                  {state.message}
-                </p>
-              ) : null}
               <div className="flex justify-end">
                 <Button type="submit" disabled={pending}>
                   {pending ? "Хадгалж байна..." : "Хадгалах"}
@@ -207,7 +202,7 @@ export function MaintenanceDetail({
                       <span className="font-medium text-zinc-700 dark:text-zinc-300">
                         {comment.author_name}
                       </span>
-                      <span>{new Date(comment.created_at).toLocaleString("mn-MN")}</span>
+                      <span>{formatDateTimeMn(comment.created_at)}</span>
                     </div>
                     <p className="mt-1 text-sm whitespace-pre-wrap">{comment.comment}</p>
                   </div>
@@ -230,7 +225,7 @@ export function MaintenanceDetail({
               {auditLogs.map((log) => (
                 <div key={log.id} className="py-3">
                   <div className="text-xs text-zinc-500">
-                    {new Date(log.created_at).toLocaleString("mn-MN")}
+                    {formatDateTimeMn(log.created_at)}
                   </div>
                   <div className="font-medium text-sm mt-0.5">{auditActionLabel(log.action)}</div>
                   <div className="text-xs text-zinc-500 mt-0.5">{log.actor_name}</div>

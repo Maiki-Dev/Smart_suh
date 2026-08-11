@@ -18,6 +18,7 @@ import {
   maintenancePriorityLabel,
   maintenanceStatusLabel,
 } from "@/lib/admin/format";
+import { formatDateMn } from "@/lib/format/datetime";
 import { Eye } from "lucide-react";
 
 type Filters = {
@@ -137,7 +138,7 @@ export function MaintenanceManagement({
                       </td>
                       <td className="px-3 py-3">{req.assigned_operator_name ?? "—"}</td>
                       <td className="px-3 py-3 text-zinc-500">
-                        {new Date(req.created_at).toLocaleDateString("mn-MN")}
+                        {formatDateMn(req.created_at)}
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex justify-end">

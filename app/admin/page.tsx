@@ -147,7 +147,7 @@ export default async function AdminPage() {
       iconClassName: 'text-violet-500',
     }],
     ['total_debt', {
-      label: 'Нийт өр',
+      label: 'Нийт төлбөр',
       value: formatMNT(stats.total_debt),
       sub: `${stats.overdue_invoices} хугацаа хэтэрсэн · ${stats.pending_invoices} хүлээгдэж буй`,
       accent: 'border-l-amber-500',

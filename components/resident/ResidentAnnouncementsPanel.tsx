@@ -3,6 +3,7 @@
 import { Pin } from "lucide-react";
 import type { Announcement } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDateMn } from "@/lib/format/datetime";
 import { cn } from "@/lib/utils";
 
 export function ResidentAnnouncementsPanel({
@@ -37,13 +38,7 @@ export function ResidentAnnouncementsPanel({
               <CardTitle className="text-base leading-snug">{item.title}</CardTitle>
             </div>
             <p className="text-xs text-zinc-500 mt-1">
-              {item.published_at
-                ? new Date(item.published_at).toLocaleDateString("mn-MN", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })
-                : "—"}
+              {item.published_at ? formatDateMn(item.published_at) : "—"}
             </p>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
@@ -70,7 +65,7 @@ export function ResidentAnnouncementsPanel({
             ) : null}
             {item.expires_at ? (
               <p className="text-[10px] text-zinc-400">
-                Хүчинтэй хүртэл: {new Date(item.expires_at).toLocaleDateString("mn-MN")}
+                Хүчинтэй хүртэл: {formatDateMn(item.expires_at)}
               </p>
             ) : null}
           </CardContent>

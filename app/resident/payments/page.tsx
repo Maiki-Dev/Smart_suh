@@ -44,7 +44,7 @@ export default async function ResidentPaymentsPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <Card>
             <CardHeader>
-              <CardTitle>Одоогийн өр</CardTitle>
+              <CardTitle>Одоогийн төлбөр</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-semibold tabular-nums">{formatMNT(debt)}</div>

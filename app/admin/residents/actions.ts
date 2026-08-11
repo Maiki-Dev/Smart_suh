@@ -234,7 +234,7 @@ export async function deleteResidentAction(residentId: string): Promise<Resident
   revalidatePath('/admin/residents');
   revalidatePath('/admin/apartments');
   revalidatePath(`/admin/apartments/${resident.apartment_id}`);
-  return { status: 'success', message: 'Оршин суугч бүрмосон устгагдлаа' };
+  return { status: 'success', message: 'Оршин суугч сангаас устгагдлаа' };
 }
 
 export async function listApartmentOptionsAction() {

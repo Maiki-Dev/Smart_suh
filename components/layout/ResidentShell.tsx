@@ -1,44 +1,27 @@
 "use client";
 
-import type { ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from "react";
 import {
-  Home as HomeIcon,
-  CreditCard as CreditCardIcon,
-  Car as CarIcon,
-  UserPlus as UserPlusIcon,
-  Wrench as WrenchIcon,
-  Megaphone as MegaphoneIcon,
+  Building2,
+  LogOut,
   Bell as BellIcon,
-  Menu as MenuIcon,
-  LogOut as LogOutIcon,
   Sun as SunIcon,
   Moon as MoonIcon,
-  Building2,
-} from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { logoutAction } from '@/app/login/actions';
-import { cn } from '@/lib/utils';
-import type { AuthContext } from '@/lib/auth/session';
+} from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { logoutAction } from "@/app/login/actions";
+import { cn } from "@/lib/utils";
+import type { AuthContext } from "@/lib/auth/session";
+import {
+  RESIDENT_BOTTOM_NAV_ITEMS,
+  RESIDENT_NAV_GROUPS,
+  type ResidentNavGroup,
+  type ResidentNavItem,
+} from "@/components/layout/resident-nav";
 
-export interface ResidentNavItem {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-  segment: string;
-}
-
-export const RESIDENT_NAV_ITEMS: ResidentNavItem[] = [
-  { label: 'Нүүр',        href: '/resident',               icon: HomeIcon,         segment: '' },
-  { label: 'Төлбөр',      href: '/resident/payments',      icon: CreditCardIcon,   segment: 'payments' },
-  { label: 'Машин',       href: '/resident/vehicle',       icon: CarIcon,          segment: 'vehicle' },
-  { label: 'Зочин',       href: '/resident/visitors',      icon: UserPlusIcon,     segment: 'visitors' },
-  { label: 'Засвар',      href: '/resident/maintenance',   icon: WrenchIcon,       segment: 'maintenance' },
-  { label: 'Зарлал',      href: '/resident/announcements', icon: MegaphoneIcon,    segment: 'announcements' },
-  { label: 'Мэдэгдэл',    href: '/resident/notifications', icon: BellIcon,         segment: 'notifications' },
-];
+export { RESIDENT_NAV_ITEMS, RESIDENT_NAV_GROUPS, RESIDENT_BOTTOM_NAV_ITEMS } from "@/components/layout/resident-nav";
+export type { ResidentNavItem } from "@/components/layout/resident-nav";
 
 export interface ResidentShellProps {
   ctx: AuthContext;
@@ -53,172 +36,120 @@ export interface ResidentShellProps {
 
 export function ResidentShell({
   ctx,
-  apartmentLabel = 'A-101',
+  apartmentLabel = "—",
   unreadNotifications = 0,
-  activeSegment = '',
+  activeSegment = "",
   pageTitle,
   pageSubtitle,
   headerRight,
   children,
 }: ResidentShellProps) {
-  const initials = `${(ctx.user.first_name || '')[0] ?? ''}${(ctx.user.last_name || '')[0] ?? ''}`;
-  const orgName = ctx.user.organization?.name ?? '—';
+  const initials = `${(ctx.user.first_name || "")[0] ?? ""}${(ctx.user.last_name || "")[0] ?? ""}`;
+  const orgName = ctx.user.organization?.name ?? "—";
+  const fullName = `${ctx.user.first_name} ${ctx.user.last_name}`.trim();
   const notifCount = Math.max(0, Math.min(99, unreadNotifications));
 
   return (
-    <div className="h-dvh overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
-      <div className="flex h-full w-full flex-col md:flex-row">
-        {/* Desktop sidebar */}
-        <aside className="hidden md:flex md:w-60 lg:w-64 h-full shrink-0 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 h-14 shrink-0 border-b border-zinc-100 dark:border-zinc-800">
-            <div className="size-8 rounded-lg bg-emerald-600 flex items-center justify-center shrink-0">
-              <Building2 className="size-4 text-white" />
+    <div className="h-dvh overflow-hidden bg-background text-foreground">
+      <div className="flex h-full">
+        <aside className="hidden md:flex w-60 lg:w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+          <div className="flex h-14 items-center gap-2.5 border-b border-sidebar-border px-4 shrink-0">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <Building2 className="size-4" />
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="font-semibold text-sm tracking-tight truncate">Smart СӨХ</span>
-              <span className="text-[10px] uppercase tracking-wider text-zinc-500 truncate">Оршин суугч</span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold leading-tight">Smart СӨХ</p>
+              <p className="truncate text-xs text-muted-foreground">Оршин суугч</p>
             </div>
           </div>
 
-          <nav className="flex-1 min-h-0 px-2 py-3 overflow-y-auto overscroll-contain">
-            <div className="grid grid-cols-1 gap-0.5">
-              {RESIDENT_NAV_ITEMS.map((item) => {
-                const active = item.segment === activeSegment;
-                const Icon = item.icon;
-                const isNotif = item.segment === 'notifications';
-                return (
-                  <a
-                    key={item.segment}
-                    href={item.href}
-                    className={cn(
-                      'group flex items-center gap-2.5 h-9 px-2.5 rounded-md text-sm font-medium transition-colors relative',
-                      active
-                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                        : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/70'
-                    )}
-                  >
-                    <Icon className={cn('size-4 shrink-0', active ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300')} />
-                    <span className="truncate">{item.label}</span>
-                    {isNotif && notifCount > 0 ? (
-                      <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-semibold">
-                        {notifCount > 99 ? '99+' : notifCount}
-                      </span>
-                    ) : null}
-                  </a>
-                );
-              })}
-            </div>
-          </nav>
+          <ResidentSidebarNav
+            activeSegment={activeSegment}
+            notifCount={notifCount}
+            className="flex-1 min-h-0 py-3"
+          />
 
-          <div className="p-3 shrink-0 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/5 ring-1 ring-emerald-100 dark:ring-emerald-500/10">
-              <div className="text-[10px] uppercase tracking-wider text-emerald-700 dark:text-emerald-300 font-semibold mb-1">
-                Миний орон сууц
-              </div>
-              <div className="text-lg font-semibold tracking-tight">{apartmentLabel}</div>
-              <div className="text-xs text-zinc-500 mt-0.5">{orgName}</div>
+          <div className="shrink-0 border-t border-sidebar-border p-3">
+            <div className="mb-3 rounded-md border border-sidebar-border bg-muted/40 px-3 py-2.5">
+              <p className="text-xs text-muted-foreground">Орон сууц</p>
+              <p className="text-sm font-semibold leading-tight">{apartmentLabel}</p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{orgName}</p>
             </div>
-            <div className="flex items-center gap-2.5 p-2 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors">
+            <div className="mb-2 flex items-center gap-2.5 px-1">
               <Avatar size="sm">
-                <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">
+                <AvatarFallback className="bg-muted text-xs font-medium text-muted-foreground">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium truncate">
-                  {ctx.user.first_name} {ctx.user.last_name}
-                </div>
-                <div className="text-[10px] text-zinc-500 truncate">{ctx.user.email}</div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium leading-tight">{fullName || initials}</p>
+                <p className="truncate text-xs text-muted-foreground">{ctx.user.email}</p>
               </div>
             </div>
-            <form action={logoutAction} className="w-full">
+            <form action={logoutAction}>
               <button
                 type="submit"
-                className="w-full flex items-center gap-2.5 h-8 px-2.5 rounded-md text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
-                <LogOutIcon className="size-3.5" />
-                Системээс гарах
+                <LogOut className="size-4" />
+                Гарах
               </button>
             </form>
           </div>
         </aside>
 
-        {/* Main content */}
-        <main className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
-          <header className="h-14 shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 sm:px-6 flex items-center justify-between gap-3 z-30">
-            <div className="flex items-center gap-2 min-w-0">
-              <label
-                htmlFor="resident-nav-toggle"
-                className="md:hidden size-8 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 cursor-pointer shrink-0"
-                aria-label="Цэс нээх"
-              >
-                <MenuIcon className="size-4" />
-              </label>
-              <div className="min-w-0">
-                <div className="text-[11px] uppercase tracking-wider text-zinc-400 leading-none">
-                  {apartmentLabel}
-                </div>
-                <h1 className="text-sm font-semibold tracking-tight truncate">
-                  {pageTitle ?? 'Нүүр хуудас'}
-                </h1>
-              </div>
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <header className="z-10 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4 sm:px-6">
+            <div className="flex min-w-0 items-center gap-2">
+              <MobileNavButton />
+              <h1 className="truncate text-sm font-semibold">{pageTitle ?? "Нүүр"}</h1>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
+
+            <div className="flex items-center gap-1">
               <ThemeToggle />
               <a
                 href="/resident/notifications"
-                className="relative size-8 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-500"
+                className="relative flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+                aria-label="Мэдэгдэл"
               >
                 <BellIcon className="size-4" />
                 {notifCount > 0 ? (
-                  <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-semibold inline-flex items-center justify-center">
-                    {notifCount > 99 ? '99+' : notifCount}
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-white">
+                    {notifCount > 99 ? "99+" : notifCount}
                   </span>
                 ) : null}
               </a>
-              <div className="hidden sm:flex items-center gap-2 pl-2 ml-1 border-l border-zinc-200 dark:border-zinc-800">
-                <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
-                  Resident
+              <div className="ml-1 hidden items-center gap-2 border-l border-border pl-3 sm:flex">
+                <Badge variant="secondary" className="font-normal">
+                  {apartmentLabel}
                 </Badge>
                 <Avatar size="sm">
-                  <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">
-                    {initials}
-                  </AvatarFallback>
+                  <AvatarFallback className="bg-muted text-xs font-medium">{initials}</AvatarFallback>
                 </Avatar>
               </div>
               {headerRight}
             </div>
           </header>
 
-          {/* Mobile nav (drawer) */}
           <MobileResidentNav
             initials={initials}
+            fullName={fullName}
             orgName={orgName}
             apartmentLabel={apartmentLabel}
             notifCount={notifCount}
             activeSegment={activeSegment}
           />
 
-          {/* Body — scrollable content area */}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24 md:pb-8">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/30 pb-20 md:pb-0">
             {pageSubtitle ? (
-              <div className="px-4 sm:px-6 lg:px-8 pt-5 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/30 backdrop-blur">
-                <div className="flex flex-wrap items-end justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">
-                      {pageTitle ?? 'Нүүр хуудас'}
-                    </h2>
-                    <p className="text-sm text-zinc-500 mt-0.5">{pageSubtitle}</p>
-                  </div>
-                </div>
+              <div className="border-b border-border bg-background px-4 py-4 sm:px-6 lg:px-8">
+                <h2 className="text-lg font-semibold sm:text-xl">{pageTitle ?? "Нүүр"}</h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">{pageSubtitle}</p>
               </div>
             ) : null}
-            <div className={pageSubtitle ? 'p-4 sm:p-6 lg:p-8' : 'p-4 sm:p-6 lg:p-8'}>
-              {children}
-            </div>
+            <div className="p-4 sm:p-6 lg:p-8">{children}</div>
           </div>
 
-          {/* Mobile bottom nav */}
           <MobileBottomNav notifCount={notifCount} activeSegment={activeSegment} />
         </main>
       </div>
@@ -226,20 +157,121 @@ export function ResidentShell({
   );
 }
 
+function ResidentSidebarNav({
+  activeSegment,
+  notifCount,
+  className,
+  onNavigate,
+}: {
+  activeSegment: string;
+  notifCount: number;
+  className?: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <nav className={cn("overflow-y-auto overscroll-contain px-2", className)}>
+      <div className="space-y-4">
+        {RESIDENT_NAV_GROUPS.map((group) => (
+          <ResidentNavGroupBlock
+            key={group.id}
+            group={group}
+            activeSegment={activeSegment}
+            notifCount={notifCount}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+function ResidentNavGroupBlock({
+  group,
+  activeSegment,
+  notifCount,
+  onNavigate,
+}: {
+  group: ResidentNavGroup;
+  activeSegment: string;
+  notifCount: number;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div>
+      <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">{group.label}</p>
+      <ul className="space-y-0.5">
+        {group.items.map((item) => (
+          <ResidentNavLink
+            key={item.segment}
+            item={item}
+            active={item.segment === activeSegment}
+            notifCount={item.segment === "notifications" ? notifCount : 0}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ResidentNavLink({
+  item,
+  active,
+  notifCount,
+  onNavigate,
+}: {
+  item: ResidentNavItem;
+  active: boolean;
+  notifCount: number;
+  onNavigate?: () => void;
+}) {
+  const Icon = item.icon;
+  return (
+    <li>
+      <a
+        href={item.href}
+        onClick={onNavigate}
+        className={cn(
+          "flex h-9 items-center gap-2.5 rounded-md px-2 text-sm transition-colors",
+          active
+            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+            : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+        )}
+      >
+        <Icon className={cn("size-4 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
+        <span className="truncate">{item.label}</span>
+        {notifCount > 0 ? (
+          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-white">
+            {notifCount > 99 ? "99+" : notifCount}
+          </span>
+        ) : null}
+      </a>
+    </li>
+  );
+}
+
 function ThemeToggle() {
   return (
     <button
       type="button"
-      className="size-8 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-500"
+      className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
       onClick={() => {
         const root = document.documentElement;
-        const isDark = root.classList.contains('dark');
+        const isDark = root.classList.contains("dark");
         if (isDark) {
-          root.classList.remove('dark');
-          try { localStorage.setItem('theme', 'light'); } catch {}
+          root.classList.remove("dark");
+          try {
+            localStorage.setItem("theme", "light");
+          } catch {
+            /* ignore */
+          }
         } else {
-          root.classList.add('dark');
-          try { localStorage.setItem('theme', 'dark'); } catch {}
+          root.classList.add("dark");
+          try {
+            localStorage.setItem("theme", "dark");
+          } catch {
+            /* ignore */
+          }
         }
       }}
     >
@@ -249,87 +281,71 @@ function ThemeToggle() {
   );
 }
 
+function MobileNavButton() {
+  return (
+    <label
+      htmlFor="resident-nav-toggle"
+      className="flex size-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-muted md:hidden"
+      aria-label="Цэс нээх"
+    >
+      <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="4" y1="7" x2="20" y2="7" />
+        <line x1="4" y1="12" x2="20" y2="12" />
+        <line x1="4" y1="17" x2="20" y2="17" />
+      </svg>
+    </label>
+  );
+}
+
 function MobileResidentNav({
   initials,
+  fullName,
   orgName,
   apartmentLabel,
   notifCount,
   activeSegment,
 }: {
   initials: string;
+  fullName: string;
   orgName: string;
   apartmentLabel: string;
   notifCount: number;
   activeSegment: string;
 }) {
+  const closeNav = () => {
+    const el = document.getElementById("resident-nav-toggle") as HTMLInputElement | null;
+    if (el) el.checked = false;
+  };
+
   return (
     <>
       <input id="resident-nav-toggle" type="checkbox" className="peer sr-only" />
-      <div className="md:hidden fixed inset-0 top-14 z-20 bg-black/40 dark:bg-black/60 opacity-0 pointer-events-none peer-checked:opacity-100 peer-checked:pointer-events-auto transition-opacity" aria-hidden="true" />
-      <aside className="md:hidden fixed left-0 top-14 bottom-0 z-30 w-72 -translate-x-full peer-checked:translate-x-0 transition-transform bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col overflow-hidden">
-        <nav className="flex-1 min-h-0 px-2 py-3 overflow-y-auto overscroll-contain">
-          <div className="grid grid-cols-1 gap-0.5">
-            {RESIDENT_NAV_ITEMS.map((item) => {
-              const active = item.segment === activeSegment;
-              const Icon = item.icon;
-              const isNotif = item.segment === 'notifications';
-              return (
-                <a
-                  key={item.segment}
-                  href={item.href}
-                  onClick={() => {
-                    const el = document.getElementById('resident-nav-toggle') as HTMLInputElement | null;
-                    if (el) el.checked = false;
-                  }}
-                  className={cn(
-                    'group flex items-center gap-2.5 h-9 px-2.5 rounded-md text-sm font-medium transition-colors relative',
-                    active
-                      ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                      : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/70'
-                  )}
-                >
-                  <Icon className={cn('size-4 shrink-0', active ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500')} />
-                  <span>{item.label}</span>
-                  {isNotif && notifCount > 0 ? (
-                    <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-semibold">
-                      {notifCount > 99 ? '99+' : notifCount}
-                    </span>
-                  ) : null}
-                </a>
-              );
-            })}
-          </div>
-        </nav>
-        <Separator className="bg-zinc-200 dark:bg-zinc-800 shrink-0" />
-        <div className="p-3 space-y-2 shrink-0">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/5 ring-1 ring-emerald-100 dark:ring-emerald-500/10">
-            <div className="text-[10px] uppercase tracking-wider text-emerald-700 dark:text-emerald-300 font-semibold mb-1">
-              Миний орон сууц
-            </div>
-            <div className="text-lg font-semibold tracking-tight">{apartmentLabel}</div>
-            <div className="text-xs text-zinc-500 mt-0.5">{orgName}</div>
-          </div>
-          <div className="flex items-center gap-2.5 p-2 rounded-md bg-zinc-50 dark:bg-zinc-800/60">
-            <Avatar size="sm">
-              <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium truncate">{initials}</div>
-              <div className="text-[10px] text-zinc-500 truncate">{orgName}</div>
-            </div>
-            <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
-              Resident
-            </Badge>
-          </div>
-          <form action={logoutAction} className="w-full">
+      <label
+        htmlFor="resident-nav-toggle"
+        className="fixed inset-0 top-14 z-20 bg-black/40 opacity-0 pointer-events-none peer-checked:pointer-events-auto peer-checked:opacity-100 transition-opacity md:hidden"
+        aria-hidden="true"
+      />
+      <aside className="fixed bottom-0 left-0 top-14 z-30 flex w-64 -translate-x-full flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-150 peer-checked:translate-x-0 md:hidden">
+        <div className="border-b border-sidebar-border px-4 py-3">
+          <p className="truncate text-sm font-medium">{fullName || initials}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {apartmentLabel} · {orgName}
+          </p>
+        </div>
+        <ResidentSidebarNav
+          activeSegment={activeSegment}
+          notifCount={notifCount}
+          className="flex-1 min-h-0 py-3"
+          onNavigate={closeNav}
+        />
+        <div className="border-t border-sidebar-border p-3">
+          <form action={logoutAction}>
             <button
               type="submit"
-              className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-md text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/70"
+              className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground hover:bg-sidebar-accent"
             >
-              <LogOutIcon className="size-3.5" />
-              Системээс гарах
+              <LogOut className="size-4" />
+              Гарах
             </button>
           </form>
         </div>
@@ -345,35 +361,31 @@ function MobileBottomNav({
   notifCount: number;
   activeSegment: string;
 }) {
-  const primaryItems = RESIDENT_NAV_ITEMS.slice(0, 5);
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 h-16 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg">
-      <div className="grid grid-cols-5 h-full max-w-lg mx-auto">
-        {primaryItems.map((item) => {
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background md:hidden">
+      <div className="mx-auto grid h-16 max-w-lg grid-cols-5">
+        {RESIDENT_BOTTOM_NAV_ITEMS.map((item) => {
           const active = item.segment === activeSegment;
           const Icon = item.icon;
-          const isNotif = item.segment === 'notifications';
+          const badge = item.segment === "notifications" ? notifCount : 0;
           return (
             <a
-              key={item.segment}
+              key={item.segment || "home"}
               href={item.href}
               className={cn(
-                'relative flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors',
-                active ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
+                "relative flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium",
+                active ? "text-primary" : "text-muted-foreground",
               )}
             >
               <div className="relative">
-                <Icon className={cn('size-[18px]', active ? '' : '')} />
-                {isNotif && notifCount > 0 ? (
-                  <span className="absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-semibold inline-flex items-center justify-center">
-                    {notifCount > 99 ? '99+' : notifCount}
+                <Icon className="size-[18px]" />
+                {badge > 0 ? (
+                  <span className="absolute -right-2 -top-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-medium text-white">
+                    {badge > 9 ? "9+" : badge}
                   </span>
                 ) : null}
               </div>
-              <span className="truncate max-w-full">{item.label}</span>
-              {active ? (
-                <span className="absolute bottom-0 h-0.5 w-7 rounded-full bg-emerald-500" />
-              ) : null}
+              <span className="max-w-full truncate">{item.label}</span>
             </a>
           );
         })}

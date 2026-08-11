@@ -16,6 +16,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErpTableShell, erpTableHeadClass, erpTableRowClass } from "@/components/ui/erp-table";
+import {
+  erpDialogClassName,
+  erpDialogFooterClassName,
+  erpDialogHeaderClassName,
+  erpSelectClassName,
+} from "@/components/ui/erp-dialog";
+import { notifyActionResult, useActionToast } from "@/lib/hooks/use-action-toast";
 import {
   StatusBadge,
   apartmentStatusTone,
@@ -53,22 +62,22 @@ function ApartmentFormDialog({
     dialogRef.current?.showModal();
   }, []);
 
-  useEffect(() => {
-    if (state.status === "success") {
+  useActionToast(state, {
+    onSuccess: () => {
       router.refresh();
       onClose();
-    }
-  }, [state.status, router, onClose]);
+    },
+  });
 
   return (
     <dialog
       ref={dialogRef}
-      className="fixed inset-0 z-50 m-auto w-[min(100%,560px)] rounded-xl border border-zinc-200 bg-white p-0 shadow-xl backdrop:bg-black/40 dark:border-zinc-800 dark:bg-zinc-900"
+      className={erpDialogClassName}
       onClose={onClose}
     >
       <form key={formKey} action={formAction} className="flex flex-col">
         {apartment ? <input type="hidden" name="id" value={apartment.id} /> : null}
-        <div className="border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+        <div className={erpDialogHeaderClassName}>
           <h3 className="text-lg font-semibold">
             {apartment ? "Орон сууц засах" : "Шинэ орон сууц"}
           </h3>
@@ -100,7 +109,7 @@ function ApartmentFormDialog({
             <Input id="floor" name="floor" type="number" defaultValue={apartment?.floor ?? ""} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="apartment_number">Орон сууцны №</Label>
+            <Label htmlFor="apartment_number">Тоот №</Label>
             <Input
               id="apartment_number"
               name="apartment_number"
@@ -122,11 +131,8 @@ function ApartmentFormDialog({
               required
             />
           </div>
-          {state.status === "error" && state.message ? (
-            <p className="sm:col-span-2 text-sm text-destructive">{state.message}</p>
-          ) : null}
         </div>
-        <div className="flex justify-end gap-2 border-t border-zinc-200 px-5 py-4 dark:border-zinc-800">
+        <div className={erpDialogFooterClassName}>
           <Button type="button" variant="outline" onClick={onClose}>
             Болих
           </Button>
@@ -157,7 +163,8 @@ export function ApartmentManagement({
     setPendingId(apartment.id);
     const action =
       apartment.status === "VACANT" ? activateApartmentAction : deactivateApartmentAction;
-    await action(apartment.id);
+    const result = await action(apartment.id);
+    notifyActionResult(result);
     router.refresh();
     setPendingId(null);
   }
@@ -187,7 +194,7 @@ export function ApartmentManagement({
             <select
               name="status"
               defaultValue={filters.status ?? ""}
-              className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+              className={erpSelectClassName}
             >
               <option value="">Бүх төлөв</option>
               <option value="OCCUPIED">Оршин сууж байгаа</option>
@@ -199,9 +206,9 @@ export function ApartmentManagement({
             </Button>
           </form>
 
-          <div className="overflow-x-auto rounded-xl ring-1 ring-zinc-200 dark:ring-zinc-800">
+          <ErpTableShell>
             <table className="w-full min-w-[1100px] text-sm">
-              <thead className="bg-zinc-50 text-left text-[11px] uppercase tracking-wider text-zinc-500 dark:bg-zinc-900/60">
+              <thead className={erpTableHeadClass}>
                 <tr>
                   <th className="px-3 py-3">Барилга</th>
                   <th className="px-3 py-3">Байр</th>
@@ -220,16 +227,13 @@ export function ApartmentManagement({
               <tbody>
                 {apartments.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="px-3 py-10 text-center text-zinc-500">
-                      Орон сууц олдсонгүй
+                    <td colSpan={12}>
+                      <EmptyState title="Орон сууц олдсонгүй" description="Шүүлт эсвэл хайлтаа өөрчилж үзнэ үү." />
                     </td>
                   </tr>
                 ) : (
                   apartments.map((apt) => (
-                    <tr
-                      key={apt.id}
-                      className="border-t border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50/70 dark:hover:bg-zinc-900/40"
-                    >
+                    <tr key={apt.id} className={erpTableRowClass}>
                       <td className="px-3 py-3">{apt.building_name}</td>
                       <td className="px-3 py-3">{apt.tower ?? "—"}</td>
                       <td className="px-3 py-3">{apt.entrance ?? "—"}</td>
@@ -290,7 +294,7 @@ export function ApartmentManagement({
                 )}
               </tbody>
             </table>
-          </div>
+          </ErpTableShell>
         </CardContent>
       </Card>
 

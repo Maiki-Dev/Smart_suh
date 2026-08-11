@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { passStatusLabel } from "@/lib/admin/format";
+import { formatDateTimeMn } from "@/lib/format/datetime";
 
 function passTone(status: string): "emerald" | "amber" | "rose" | "zinc" {
   switch (status) {
@@ -103,8 +104,8 @@ export function VisitorManagement({
                     <td className="px-3 py-3">{pass.plate_number ?? "—"}</td>
                     <td className="px-3 py-3">{[pass.building_name, pass.apartment_number].filter(Boolean).join(" · ")}</td>
                     <td className="px-3 py-3">{pass.resident_name ?? "—"}</td>
-                    <td className="px-3 py-3 whitespace-nowrap">{new Date(pass.valid_from).toLocaleString("mn-MN")}</td>
-                    <td className="px-3 py-3 whitespace-nowrap">{new Date(pass.valid_until).toLocaleString("mn-MN")}</td>
+                    <td className="px-3 py-3 whitespace-nowrap">{formatDateTimeMn(pass.valid_from)}</td>
+                    <td className="px-3 py-3 whitespace-nowrap">{formatDateTimeMn(pass.valid_until)}</td>
                     <td className="px-3 py-3">
                       <StatusBadge label={passStatusLabel(pass.status)} tone={passTone(pass.status)} />
                     </td>

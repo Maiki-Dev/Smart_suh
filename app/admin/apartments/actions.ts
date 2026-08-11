@@ -11,8 +11,10 @@ import {
 import { findOrCreateBuildingByName } from '@/lib/queries/buildings';
 import {
   createApartment,
+  deleteApartment,
   getApartmentById,
   getApartmentByNumber,
+  getApartmentDeleteBlockers,
   updateApartment,
 } from '@/lib/queries/apartments';
 import type { ApartmentStatus } from '@/types';
@@ -176,6 +178,27 @@ export async function deactivateApartmentAction(apartmentId: string): Promise<Ap
 
 export async function activateApartmentAction(apartmentId: string): Promise<ApartmentActionState> {
   return setApartmentStatusAction(apartmentId, 'OCCUPIED');
+}
+
+export async function deleteApartmentAction(apartmentId: string): Promise<ApartmentActionState> {
+  const ctx = await requireAdminRole();
+  const existing = await getApartmentById(apartmentId);
+  if (!existing) return { status: 'error', message: 'Орон сууц олдсонгүй' };
+  assertOrganizationAccess(ctx, existing.organization_id);
+
+  const blockers = await getApartmentDeleteBlockers(apartmentId);
+  if (blockers.length > 0) {
+    return {
+      status: 'error',
+      message: `Устгах боломжгүй: ${blockers.join(', ')}. Эхлээд оршин суугчийг идэвхгүй болгоод, төлбөрийн түүхгүй эсэхийг шалгана уу.`,
+    };
+  }
+
+  const deleted = await deleteApartment(apartmentId);
+  if (!deleted) return { status: 'error', message: 'Устгахад алдаа гарлаа' };
+
+  revalidatePath('/admin/apartments');
+  return { status: 'success', message: 'Орон сууц бүрмосон устгагдлаа' };
 }
 
 export async function getApartmentsForSelectAction() {

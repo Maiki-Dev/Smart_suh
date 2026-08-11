@@ -155,7 +155,7 @@ export default async function ResidentDashboardPage() {
                   <CarIcon className="size-4 text-teal-500" />
                   Машины мэдээлэл
                 </CardTitle>
-                <CardDescription className="text-sm">Гатааны нэвтрэлтийн эрх</CardDescription>
+                <CardDescription className="text-sm">Зогсоолын нэвтрэлтийн эрх</CardDescription>
               </div>
               <Badge variant="secondary">{overview.vehicles.length}</Badge>
             </CardHeader>
@@ -171,7 +171,7 @@ export default async function ResidentDashboardPage() {
               <div>
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <WaypointsIcon className="size-4 text-sky-500" />
-                  Гатааны лог
+                  Зогсоолын лог
                 </CardTitle>
                 <CardDescription className="text-sm">Сүүлийн орсон гарсан</CardDescription>
               </div>
@@ -577,7 +577,7 @@ function VehicleList({ vehicles }: { vehicles: VehicleRow[] }) {
 
 function GateLogList({ items }: { items: GateAccessLog[] }) {
   if (!items.length) {
-    return <EmptyState icon={WaypointsIcon} title="Гатааны лог байхгүй" description="Машины гатааны нэвтрэлт энд харагдна." />;
+    return <EmptyState icon={WaypointsIcon} title="Зогсоолын лог байхгүй" description="Машины зогсоолын нэвтрэлт энд харагдна." />;
   }
   return (
     <div className="flex flex-col">

@@ -19,6 +19,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  erpDialogClassName,
+  erpDialogFooterClassName,
+  erpDialogHeaderClassName,
+  erpSelectClassName,
+} from "@/components/ui/erp-dialog";
+import { notifyActionResult, useActionToast } from "@/lib/hooks/use-action-toast";
+import {
   StatusBadge,
   residentStatusTone,
 } from "@/components/admin/StatusBadge";
@@ -52,22 +59,22 @@ function ResidentFormDialog({
     dialogRef.current?.showModal();
   }, []);
 
-  useEffect(() => {
-    if (state.status === "success") {
+  useActionToast(state, {
+    onSuccess: () => {
       router.refresh();
       onClose();
-    }
-  }, [state.status, router, onClose]);
+    },
+  });
 
   return (
     <dialog
       ref={dialogRef}
-      className="fixed inset-0 z-50 m-auto w-[min(100%,560px)] rounded-xl border border-zinc-200 bg-white p-0 shadow-xl backdrop:bg-black/40 dark:border-zinc-800 dark:bg-zinc-900"
+      className={erpDialogClassName}
       onClose={onClose}
     >
       <form key={formKey} action={formAction} className="flex flex-col">
         {resident ? <input type="hidden" name="id" value={resident.id} /> : null}
-        <div className="border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+        <div className={erpDialogHeaderClassName}>
           <h3 className="text-lg font-semibold">
             {resident ? "Оршин суугч засах" : "Шинэ оршин суугч"}
           </h3>
@@ -80,7 +87,7 @@ function ResidentFormDialog({
               name="apartment_id"
               defaultValue={resident?.apartment_id ?? defaultApartmentId ?? ""}
               required
-              className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+              className={erpSelectClassName}
             >
               <option value="" disabled>
                 Сонгох...
@@ -117,11 +124,8 @@ function ResidentFormDialog({
             />
             Эзэмшигч болгох
           </label>
-          {state.status === "error" && state.message ? (
-            <p className="sm:col-span-2 text-sm text-destructive">{state.message}</p>
-          ) : null}
         </div>
-        <div className="flex justify-end gap-2 border-t border-zinc-200 px-5 py-4 dark:border-zinc-800">
+        <div className={erpDialogFooterClassName}>
           <Button type="button" variant="outline" onClick={onClose}>
             Болих
           </Button>
@@ -156,7 +160,8 @@ export function ResidentManagement({
 
   async function runAction(id: string, fn: (id: string) => Promise<ResidentActionState>) {
     setPendingId(id);
-    await fn(id);
+    const result = await fn(id);
+    notifyActionResult(result);
     router.refresh();
     setPendingId(null);
   }
@@ -185,7 +190,7 @@ export function ResidentManagement({
             <select
               name="status"
               defaultValue={filters.status ?? ""}
-              className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+              className={erpSelectClassName}
             >
               <option value="">Бүх төлөв</option>
               <option value="ACTIVE">Идэвхтэй</option>
@@ -287,10 +292,10 @@ export function ResidentManagement({
                               variant="ghost"
                               disabled={pendingId === resident.id}
                               onClick={() => {
-                                if (!confirm("Энэ оршин суугчийг бүрмосон устгах уу?")) return;
+                                if (!confirm("Энэ оршин суугчийг дата сангаас устгах уу?")) return;
                                 runAction(resident.id, deleteResidentAction);
                               }}
-                              title="Бүрмосон устгах"
+                              title="Сангаас устгах"
                             >
                               <Trash2 className="size-4 text-rose-600" />
                             </Button>

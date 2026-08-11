@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, paymentStatusTone } from "@/components/admin/StatusBadge";
 import { formatMNT, invoiceStatusLabel } from "@/lib/admin/format";
+import { notifyActionResult } from "@/lib/hooks/use-action-toast";
 
 type Filters = {
   q?: string;
@@ -39,13 +40,12 @@ export function InvoiceManagement({
 }) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   async function handleCancel(id: string) {
     setPendingId(id);
     const result = await cancelInvoiceAction(id);
-    setMessage(result.message ?? null);
+    notifyActionResult(result);
     router.refresh();
     setPendingId(null);
   }
@@ -53,19 +53,16 @@ export function InvoiceManagement({
   function handleGenerate() {
     startTransition(async () => {
       const result = await generateMonthlyInvoicesAction();
-      setMessage(result.summary ?? result.message ?? null);
+      notifyActionResult(
+        { status: result.status, message: result.summary ?? result.message },
+        "Нэхэмжлэл амжилттай үүслээ",
+      );
       router.refresh();
     });
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {message ? (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
-          {message}
-        </div>
-      ) : null}
-
       <Card>
         <CardHeader className="gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

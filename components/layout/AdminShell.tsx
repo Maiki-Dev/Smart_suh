@@ -1,60 +1,24 @@
 "use client";
 
-import type { ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from "react";
 import {
-  LayoutDashboard,
   Building2,
-  Users,
-  FileText,
-  CreditCard,
-  Car,
-  Waypoints,
-  UserPlus,
-  Wrench,
-  Megaphone,
-  BarChart3,
-  Settings as SettingsIcon,
   LogOut,
-  ChevronDown,
-  Search as SearchIcon,
   Bell as BellIcon,
   Sun as SunIcon,
   Moon as MoonIcon,
-} from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { logoutAction } from '@/app/login/actions';
-import { cn } from '@/lib/utils';
-import type { AuthContext } from '@/lib/auth/session';
-
-export interface AdminNavItem {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-  segment: string;
-}
-
-export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
-  { label: 'Хянах самбар', href: '/admin',            icon: LayoutDashboard, segment: '' },
-  { label: 'Орон сууц',    href: '/admin/apartments', icon: Building2,       segment: 'apartments' },
-  { label: 'Оршин суугч',  href: '/admin/residents',  icon: Users,           segment: 'residents' },
-  { label: 'Нэхэмжлэл',    href: '/admin/invoices',   icon: FileText,        segment: 'invoices' },
-  { label: 'Төлбөр',       href: '/admin/payments',   icon: CreditCard,      segment: 'payments' },
-  { label: 'Машин',        href: '/admin/vehicles',   icon: Car,             segment: 'vehicles' },
-  { label: 'Зогсоол',        href: '/admin/gate-access', icon: Waypoints,      segment: 'gate-access' },
-  { label: 'Зочин',        href: '/admin/visitors',   icon: UserPlus,        segment: 'visitors' },
-  { label: 'Засвар',       href: '/admin/maintenance', icon: Wrench,         segment: 'maintenance' },
-  { label: 'Зарлал',       href: '/admin/announcements', icon: Megaphone,    segment: 'announcements' },
-  { label: 'Тайлан',       href: '/admin/reports',    icon: BarChart3,       segment: 'reports' },
-  { label: 'Тохиргоо',     href: '/admin/settings',   icon: SettingsIcon,    segment: 'settings' },
-];
+} from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { logoutAction } from "@/app/login/actions";
+import { cn } from "@/lib/utils";
+import type { AuthContext } from "@/lib/auth/session";
+import { ADMIN_NAV_GROUPS, type AdminNavGroup } from "@/components/layout/admin-nav";
 
 export const ROLE_BADGE: Record<string, { label: string; className: string }> = {
-  SUPER_ADMIN: { label: 'Супер админ', className: 'bg-emerald-600 text-white' },
-  HOA_ADMIN:   { label: 'СӨХ админ',   className: 'bg-emerald-100 text-emerald-700' },
-  OPERATOR:    { label: 'Оператор',    className: 'bg-zinc-100 text-zinc-700' },
+  SUPER_ADMIN: { label: "Супер админ", className: "bg-emerald-600 text-white" },
+  HOA_ADMIN: { label: "СӨХ админ", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" },
+  OPERATOR: { label: "Оператор", className: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" },
 };
 
 export interface AdminShellProps {
@@ -68,7 +32,7 @@ export interface AdminShellProps {
 
 export function AdminShell({
   ctx,
-  activeSegment = '',
+  activeSegment = "",
   pageTitle,
   pageSubtitle,
   headerRight,
@@ -76,147 +40,163 @@ export function AdminShell({
 }: AdminShellProps) {
   const roleBadge = ROLE_BADGE[ctx.user.role] ?? {
     label: ctx.user.role,
-    className: 'bg-zinc-100 text-zinc-700',
+    className: "bg-zinc-100 text-zinc-700",
   };
-  const initials = `${(ctx.user.first_name || '')[0] ?? ''}${(ctx.user.last_name || '')[0] ?? ''}`;
-  const orgName = ctx.user.organization?.name ?? '—';
+  const initials = `${(ctx.user.first_name || "")[0] ?? ""}${(ctx.user.last_name || "")[0] ?? ""}`;
+  const orgName = ctx.user.organization?.name ?? "—";
+  const fullName = `${ctx.user.first_name} ${ctx.user.last_name}`.trim();
 
   return (
-    <div className="h-dvh overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
-      <div className="flex h-full w-full">
-        {/* Desktop sidebar — fixed height, nav scrolls independently */}
-        <aside className="hidden md:flex md:w-64 lg:w-72 h-full shrink-0 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 h-14 shrink-0 border-b border-zinc-100 dark:border-zinc-800">
-            <div className="size-8 rounded-lg bg-emerald-600 flex items-center justify-center shrink-0">
-              <Building2 className="size-4 text-white" />
+    <div className="h-dvh overflow-hidden bg-background text-foreground">
+      <div className="flex h-full">
+        <aside className="hidden md:flex w-60 lg:w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+          <div className="flex h-14 items-center gap-2.5 border-b border-sidebar-border px-4 shrink-0">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <Building2 className="size-4" />
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="font-semibold text-sm tracking-tight truncate">Smart СӨХ</span>
-              <span className="text-[10px] uppercase tracking-wider text-zinc-500 truncate">Админ самбар</span>
-            </div>
-          </div>
-
-          <div className="px-3 py-3 shrink-0">
-            <div className="flex items-center gap-2 h-8 px-2 rounded-md bg-zinc-50 dark:bg-zinc-800/60 ring-1 ring-zinc-200 dark:ring-zinc-800 text-zinc-500">
-              <SearchIcon className="size-3.5 shrink-0" />
-              <span className="text-xs">Хайлт (Ctrl+K)</span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold leading-tight">Smart СӨХ</p>
+              <p className="truncate text-xs text-muted-foreground">{orgName}</p>
             </div>
           </div>
 
-          <nav className="flex-1 min-h-0 px-2 pb-3 overflow-y-auto overscroll-contain">
-            <div className="grid grid-cols-1 gap-0.5">
-              {ADMIN_NAV_ITEMS.map((item) => {
-                const active = item.segment === activeSegment;
-                const Icon = item.icon;
-                return (
-                  <a
-                    key={item.segment}
-                    href={item.href}
-                    className={cn(
-                      'group flex items-center gap-2.5 h-9 px-2.5 rounded-md text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40',
-                      active
-                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                        : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/70'
-                    )}
-                  >
-                    <Icon className={cn('size-4 shrink-0', active ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300')} />
-                    <span className="truncate">{item.label}</span>
-                  </a>
-                );
-              })}
-            </div>
-          </nav>
+          <AdminSidebarNav activeSegment={activeSegment} className="flex-1 min-h-0 py-3" />
 
-          <div className="px-3 py-3 shrink-0 border-t border-zinc-100 dark:border-zinc-800 space-y-1.5">
-            <div className="flex items-center gap-2.5 p-2 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors">
-              <Avatar size="sm" className="ring-2 ring-emerald-500/10">
-                <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">
+          <div className="shrink-0 border-t border-sidebar-border p-3">
+            <div className="mb-2 flex items-center gap-2.5 px-1">
+              <Avatar size="sm">
+                <AvatarFallback className="bg-muted text-xs font-medium text-muted-foreground">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium truncate">
-                  {ctx.user.first_name} {ctx.user.last_name}
-                </div>
-                <div className="text-[10px] text-zinc-500 truncate">{orgName}</div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium leading-tight">{fullName || initials}</p>
+                <p className="truncate text-xs text-muted-foreground">{roleBadge.label}</p>
               </div>
-              <ChevronDown className="size-3.5 text-zinc-400" />
             </div>
-            <form action={logoutAction} className="w-full">
+            <form action={logoutAction}>
               <button
                 type="submit"
-                className="w-full flex items-center gap-2.5 h-8 px-2.5 rounded-md text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
-                <LogOut className="size-3.5" />
-                Системээс гарах
+                <LogOut className="size-4" />
+                Гарах
               </button>
             </form>
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
-          {/* Top bar */}
-          <header className="h-14 shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 sm:px-6 flex items-center justify-between gap-3 z-30">
-            <div className="flex items-center gap-2 min-w-0">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <header className="z-10 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4 sm:px-6">
+            <div className="flex min-w-0 items-center gap-2">
               <MobileNavButton />
-              <div className="min-w-0">
-                <div className="text-[11px] uppercase tracking-wider text-zinc-400 leading-none">
-                  {orgName}
-                </div>
-                <h1 className="text-sm font-semibold tracking-tight truncate">
-                  {pageTitle ?? 'Хянах самбар'}
-                </h1>
-              </div>
+              <h1 className="truncate text-sm font-semibold">{pageTitle ?? "Хянах самбар"}</h1>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1">
               <ThemeToggle />
-              <button className="relative size-8 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-500">
+              <button
+                type="button"
+                className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+                aria-label="Мэдэгдэл"
+              >
                 <BellIcon className="size-4" />
-                <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-rose-500" />
               </button>
-              <div className="hidden sm:flex items-center gap-2 pl-2 ml-1 border-l border-zinc-200 dark:border-zinc-800">
-                <Badge className={cn('text-[10px] uppercase tracking-wider', roleBadge.className)}>
+              <div className="ml-1 hidden items-center gap-2 border-l border-border pl-3 sm:flex">
+                <Badge variant="secondary" className={cn("font-normal", roleBadge.className)}>
                   {roleBadge.label}
                 </Badge>
                 <Avatar size="sm">
-                  <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">
-                    {initials}
-                  </AvatarFallback>
+                  <AvatarFallback className="bg-muted text-xs font-medium">{initials}</AvatarFallback>
                 </Avatar>
               </div>
               {headerRight}
             </div>
           </header>
 
-          {/* Mobile sidebar (collapses via sheet / top nav toggle button) */}
           <MobileNav
             initials={initials}
+            fullName={fullName}
             orgName={orgName}
             roleBadge={roleBadge}
             activeSegment={activeSegment}
           />
 
-          {/* Page body — only this area scrolls */}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/30">
             {pageSubtitle ? (
-              <div className="px-4 sm:px-6 lg:px-8 pt-5 pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/30 backdrop-blur">
-                <div className="flex items-end justify-between gap-3 flex-wrap">
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">
-                      {pageTitle ?? 'Хянах самбар'}
-                    </h2>
-                    <p className="text-sm text-zinc-500 mt-0.5">{pageSubtitle}</p>
-                  </div>
-                </div>
+              <div className="border-b border-border bg-background px-4 py-4 sm:px-6 lg:px-8">
+                <h2 className="text-lg font-semibold sm:text-xl">{pageTitle ?? "Хянах самбар"}</h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">{pageSubtitle}</p>
               </div>
             ) : null}
-            <div className={pageSubtitle ? 'p-4 sm:p-6 lg:p-8' : 'p-4 sm:p-6 lg:p-8'}>
-              {children}
-            </div>
+            <div className="p-4 sm:p-6 lg:p-8">{children}</div>
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+function AdminSidebarNav({
+  activeSegment,
+  className,
+  onNavigate,
+}: {
+  activeSegment: string;
+  className?: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <nav className={cn("overflow-y-auto overscroll-contain px-2", className)}>
+      <div className="space-y-4">
+        {ADMIN_NAV_GROUPS.map((group) => (
+          <SidebarNavGroup
+            key={group.id}
+            group={group}
+            activeSegment={activeSegment}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+function SidebarNavGroup({
+  group,
+  activeSegment,
+  onNavigate,
+}: {
+  group: AdminNavGroup;
+  activeSegment: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div>
+      <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">{group.label}</p>
+      <ul className="space-y-0.5">
+        {group.items.map((item) => {
+          const active = item.segment === activeSegment;
+          const Icon = item.icon;
+          return (
+            <li key={item.segment}>
+              <a
+                href={item.href}
+                onClick={onNavigate}
+                className={cn(
+                  "flex h-9 items-center gap-2.5 rounded-md px-2 text-sm transition-colors",
+                  active
+                    ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+                )}
+              >
+                <Icon className={cn("size-4 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
+                <span className="truncate">{item.label}</span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -225,16 +205,24 @@ function ThemeToggle() {
   return (
     <button
       type="button"
-      className="size-8 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-500"
+      className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
       onClick={() => {
         const root = document.documentElement;
-        const isDark = root.classList.contains('dark');
+        const isDark = root.classList.contains("dark");
         if (isDark) {
-          root.classList.remove('dark');
-          try { localStorage.setItem('theme', 'light'); } catch {}
+          root.classList.remove("dark");
+          try {
+            localStorage.setItem("theme", "light");
+          } catch {
+            /* ignore */
+          }
         } else {
-          root.classList.add('dark');
-          try { localStorage.setItem('theme', 'dark'); } catch {}
+          root.classList.add("dark");
+          try {
+            localStorage.setItem("theme", "dark");
+          } catch {
+            /* ignore */
+          }
         }
       }}
     >
@@ -248,7 +236,7 @@ function MobileNavButton() {
   return (
     <label
       htmlFor="mobile-nav-toggle"
-      className="md:hidden size-8 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 cursor-pointer shrink-0"
+      className="flex size-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-muted md:hidden"
       aria-label="Цэс нээх"
     >
       <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -262,78 +250,47 @@ function MobileNavButton() {
 
 function MobileNav({
   initials,
+  fullName,
   orgName,
   roleBadge,
   activeSegment,
 }: {
   initials: string;
+  fullName: string;
   orgName: string;
   roleBadge: { label: string; className: string };
   activeSegment: string;
 }) {
+  const closeMobileNav = () => {
+    const el = document.getElementById("mobile-nav-toggle") as HTMLInputElement | null;
+    if (el) el.checked = false;
+  };
+
   return (
     <>
       <input id="mobile-nav-toggle" type="checkbox" className="peer sr-only" />
-      <div className="md:hidden fixed inset-0 top-14 z-20 bg-black/40 dark:bg-black/60 opacity-0 pointer-events-none peer-checked:opacity-100 peer-checked:pointer-events-auto transition-opacity" aria-hidden="true" />
-      <aside className="md:hidden fixed left-0 top-14 bottom-0 z-30 w-72 -translate-x-full peer-checked:translate-x-0 transition-transform bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col overflow-hidden">
-        <div className="px-3 py-3 shrink-0">
-          <div className="flex items-center gap-2 h-8 px-2 rounded-md bg-zinc-50 dark:bg-zinc-800/60 ring-1 ring-zinc-200 dark:ring-zinc-800 text-zinc-500">
-            <SearchIcon className="size-3.5 shrink-0" />
-            <span className="text-xs">Хайлт</span>
-          </div>
+      <label
+        htmlFor="mobile-nav-toggle"
+        className="fixed inset-0 top-14 z-20 bg-black/40 opacity-0 pointer-events-none peer-checked:pointer-events-auto peer-checked:opacity-100 transition-opacity md:hidden"
+        aria-hidden="true"
+      />
+      <aside className="fixed bottom-0 left-0 top-14 z-30 flex w-64 -translate-x-full flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-150 peer-checked:translate-x-0 md:hidden">
+        <div className="border-b border-sidebar-border px-4 py-3">
+          <p className="truncate text-sm font-medium">{fullName || initials}</p>
+          <p className="truncate text-xs text-muted-foreground">{orgName}</p>
         </div>
-
-        <nav className="flex-1 min-h-0 px-2 pb-3 overflow-y-auto overscroll-contain">
-          <div className="grid grid-cols-1 gap-0.5">
-            {ADMIN_NAV_ITEMS.map((item) => {
-              const active = item.segment === activeSegment;
-              const Icon = item.icon;
-              return (
-                <a
-                  key={item.segment}
-                  href={item.href}
-                  onClick={() => {
-                    const el = document.getElementById('mobile-nav-toggle') as HTMLInputElement | null;
-                    if (el) el.checked = false;
-                  }}
-                  className={cn(
-                    'group flex items-center gap-2.5 h-9 px-2.5 rounded-md text-sm font-medium transition-colors',
-                    active
-                      ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                      : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/70'
-                  )}
-                >
-                  <Icon className={cn('size-4 shrink-0', active ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500')} />
-                  <span>{item.label}</span>
-                </a>
-              );
-            })}
-          </div>
-        </nav>
-
-        <Separator className="bg-zinc-200 dark:bg-zinc-800 shrink-0" />
-        <div className="p-3 space-y-2 shrink-0">
-          <div className="flex items-center gap-2.5 p-2 rounded-md bg-zinc-50 dark:bg-zinc-800/60">
-            <Avatar size="sm">
-              <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium truncate">{initials}</div>
-              <div className="text-[10px] text-zinc-500 truncate">{orgName}</div>
-            </div>
-            <Badge className={cn('text-[10px] uppercase tracking-wider', roleBadge.className)}>
-              {roleBadge.label}
-            </Badge>
-          </div>
-          <form action={logoutAction} className="w-full">
+        <AdminSidebarNav activeSegment={activeSegment} className="flex-1 min-h-0 py-3" onNavigate={closeMobileNav} />
+        <div className="border-t border-sidebar-border p-3">
+          <Badge variant="secondary" className={cn("mb-2 font-normal", roleBadge.className)}>
+            {roleBadge.label}
+          </Badge>
+          <form action={logoutAction}>
             <button
               type="submit"
-              className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-md text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/70"
+              className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground hover:bg-sidebar-accent"
             >
-              <LogOut className="size-3.5" />
-              Системээс гарах
+              <LogOut className="size-4" />
+              Гарах
             </button>
           </form>
         </div>
@@ -342,3 +299,5 @@ function MobileNav({
   );
 }
 
+export { ADMIN_NAV_GROUPS, ADMIN_NAV_ITEMS } from "@/components/layout/admin-nav";
+export type { AdminNavItem } from "@/components/layout/admin-nav";

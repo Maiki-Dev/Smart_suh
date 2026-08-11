@@ -9,7 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  erpDialogClassName,
+  erpDialogFooterClassName,
+  erpDialogHeaderClassName,
+  erpSelectClassName,
+} from "@/components/ui/erp-dialog";
+import { useActionToast } from "@/lib/hooks/use-action-toast";
 import { formatMNT, paymentMethodLabel, paymentRecordStatusLabel } from "@/lib/admin/format";
+import { formatDateTimeMn } from "@/lib/format/datetime";
 
 const initialState: PaymentActionState = { status: "idle" };
 
@@ -44,23 +52,24 @@ function PaymentFormDialog({
     dialogRef.current?.showModal();
   }, []);
 
-  useEffect(() => {
-    if (state.status === "success") {
+  useActionToast(state, {
+    onSuccess: () => {
       router.refresh();
       onClose();
-    }
-  }, [state.status, router, onClose]);
+    },
+    successMessage: "Төлбөр амжилттай бүртгэгдлээ",
+  });
 
   const selected = openInvoices.find((inv) => inv.id === selectedInvoice);
 
   return (
     <dialog
       ref={dialogRef}
-      className="fixed inset-0 z-50 m-auto w-[min(100%,560px)] rounded-xl border border-zinc-200 bg-white p-0 shadow-xl backdrop:bg-black/40 dark:border-zinc-800 dark:bg-zinc-900"
+      className={erpDialogClassName}
       onClose={onClose}
     >
       <form action={formAction} className="flex flex-col">
-        <div className="border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+        <div className={erpDialogHeaderClassName}>
           <h3 className="text-lg font-semibold">Төлбөр бүртгэх</h3>
         </div>
         <div className="grid gap-4 px-5 py-4">
@@ -72,7 +81,7 @@ function PaymentFormDialog({
               value={selectedInvoice}
               onChange={(e) => setSelectedInvoice(e.target.value)}
               required
-              className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+              className={erpSelectClassName}
             >
               {openInvoices.length === 0 ? (
                 <option value="">Нээлттэй нэхэмжлэл байхгүй</option>
@@ -104,7 +113,7 @@ function PaymentFormDialog({
               id="payment_method"
               name="payment_method"
               defaultValue="CASH"
-              className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+              className={erpSelectClassName}
             >
               {PAYMENT_METHODS.map((method) => (
                 <option key={method} value={method}>
@@ -117,11 +126,8 @@ function PaymentFormDialog({
             <Label htmlFor="transaction_id">Гүйлгээний дугаар (заавал биш)</Label>
             <Input id="transaction_id" name="transaction_id" />
           </div>
-          {state.status === "error" && state.message ? (
-            <p className="text-sm text-destructive">{state.message}</p>
-          ) : null}
         </div>
-        <div className="flex justify-end gap-2 border-t border-zinc-200 px-5 py-4 dark:border-zinc-800">
+        <div className={erpDialogFooterClassName}>
           <Button type="button" variant="outline" onClick={onClose}>
             Болих
           </Button>
@@ -171,7 +177,7 @@ export function PaymentManagement({
             <select
               name="method"
               defaultValue={filters.method ?? ""}
-              className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+              className={erpSelectClassName}
             >
               <option value="">Бүх хэлбэр</option>
               {PAYMENT_METHODS.map((method) => (
@@ -209,7 +215,7 @@ export function PaymentManagement({
                   payments.map((payment) => (
                     <tr key={payment.id} className="border-t border-zinc-100 dark:border-zinc-800">
                       <td className="px-3 py-3">
-                        {new Date(payment.paid_at).toLocaleString("mn-MN")}
+                        {formatDateTimeMn(payment.paid_at)}
                       </td>
                       <td className="px-3 py-3">
                         {[payment.building_name, payment.apartment_number].join(" · ")}

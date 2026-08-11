@@ -111,7 +111,7 @@ export default async function AdminApartmentDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Одоогийн өр</CardTitle>
+              <CardTitle>Одоогийн төлбөр</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-semibold tabular-nums">{formatMNT(detail.current_debt)}</div>

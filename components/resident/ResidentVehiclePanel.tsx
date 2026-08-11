@@ -12,12 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { erpSelectClassName } from "@/components/ui/erp-dialog";
+import { useActionToast } from "@/lib/hooks/use-action-toast";
 import { StatusBadge, gateAccessTone } from "@/components/admin/StatusBadge";
-import {
-  gateAccessStatusLabel,
-  gateActionLabel,
-  vehicleTypeLabel,
-} from "@/lib/admin/format";
+import { gateAccessStatusLabel, gateActionLabel, vehicleTypeLabel } from "@/lib/admin/format";
+import { formatDateTimeMn } from "@/lib/format/datetime";
 import { GATE_RESTORED_MESSAGE } from "@/lib/gate/consecutive-unpaid";
 
 const initialState: ResidentVehicleActionState = { status: "idle" };
@@ -42,6 +41,9 @@ export function ResidentVehiclePanel({
     async () => refreshResidentGateAccessAction(),
     initialState,
   );
+
+  useActionToast(state, { successMessage: "Машины мэдээлэл хадгалагдлаа" });
+  useActionToast(refreshState, { successMessage: "Зогсоолын эрх шалгагдлаа" });
 
   if (!vehicle) {
     return (
@@ -86,9 +88,6 @@ export function ResidentVehiclePanel({
               Эрх шалгах
             </Button>
           </form>
-          {refreshState.message ? (
-            <p className="text-xs text-zinc-500">{refreshState.message}</p>
-          ) : null}
         </CardContent>
       </Card>
 
@@ -109,7 +108,7 @@ export function ResidentVehiclePanel({
                 id="vehicle_type"
                 name="vehicle_type"
                 defaultValue={vehicle.vehicle_type}
-                className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                className={erpSelectClassName}
               >
                 {VEHICLE_TYPES.map((type) => (
                   <option key={type} value={type}>
@@ -126,11 +125,6 @@ export function ResidentVehiclePanel({
               <Label htmlFor="rfid_number">RFID</Label>
               <Input id="rfid_number" name="rfid_number" defaultValue={vehicle.rfid_number ?? ""} />
             </div>
-            {state.message ? (
-              <p className={`sm:col-span-2 text-sm ${state.status === "error" ? "text-destructive" : "text-emerald-600"}`}>
-                {state.message}
-              </p>
-            ) : null}
             <div className="sm:col-span-2">
               <Button type="submit" disabled={pending}>
                 {pending ? "Хадгалж байна..." : "Хадгалах"}
@@ -156,7 +150,7 @@ export function ResidentVehiclePanel({
                     <div className="text-xs text-zinc-500">{log.reason ?? log.triggered_by ?? "—"}</div>
                   </div>
                   <div className="text-xs text-zinc-500">
-                    {new Date(log.created_at).toLocaleString("mn-MN")}
+                    {formatDateTimeMn(log.created_at)}
                   </div>
                 </div>
               ))}

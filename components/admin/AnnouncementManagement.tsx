@@ -17,7 +17,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  erpDialogClassName,
+  erpDialogFooterClassName,
+  erpDialogHeaderClassName,
+} from "@/components/ui/erp-dialog";
+import { notifyActionResult, useActionToast } from "@/lib/hooks/use-action-toast";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { formatDateMn, isPastInTimeZone } from "@/lib/format/datetime";
 
 const initialState: AnnouncementActionState = { status: "idle" };
 
@@ -38,12 +45,12 @@ function AnnouncementFormDialog({
     dialogRef.current?.showModal();
   }, []);
 
-  useEffect(() => {
-    if (state.status === "success") {
+  useActionToast(state, {
+    onSuccess: () => {
       router.refresh();
       onClose();
-    }
-  }, [state.status, router, onClose]);
+    },
+  });
 
   const expiresValue = announcement?.expires_at
     ? new Date(announcement.expires_at).toISOString().slice(0, 16)
@@ -52,12 +59,12 @@ function AnnouncementFormDialog({
   return (
     <dialog
       ref={dialogRef}
-      className="fixed inset-0 z-50 m-auto w-[min(100%,640px)] rounded-xl border border-zinc-200 bg-white p-0 shadow-xl backdrop:bg-black/40 dark:border-zinc-800 dark:bg-zinc-900"
+      className={`${erpDialogClassName} w-[min(100%,640px)]`}
       onClose={onClose}
     >
       <form key={formKey} action={formAction} className="flex flex-col">
         {announcement ? <input type="hidden" name="id" value={announcement.id} /> : null}
-        <div className="border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+        <div className={erpDialogHeaderClassName}>
           <h3 className="text-lg font-semibold">
             {announcement ? "Зарлал засах" : "Шинэ зарлал"}
           </h3>
@@ -110,13 +117,8 @@ function AnnouncementFormDialog({
             />
             Дээд талд бэхлэх
           </label>
-          {state.message ? (
-            <p className={`text-sm ${state.status === "error" ? "text-destructive" : "text-emerald-600"}`}>
-              {state.message}
-            </p>
-          ) : null}
         </div>
-        <div className="flex justify-end gap-2 border-t border-zinc-200 px-5 py-4 dark:border-zinc-800">
+        <div className={erpDialogFooterClassName}>
           <Button type="button" variant="outline" onClick={onClose}>
             Болих
           </Button>
@@ -139,14 +141,13 @@ export function AnnouncementManagement({
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<Announcement | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   async function runAction(id: string, fn: (id: string) => Promise<AnnouncementActionState>) {
     setPendingId(id);
     const result = await fn(id);
-    setMessage(result.message ?? null);
+    notifyActionResult(result);
     router.refresh();
     setPendingId(null);
   }
@@ -154,19 +155,13 @@ export function AnnouncementManagement({
   async function runPinAction(id: string, pinned: boolean) {
     setPendingId(id);
     const result = await pinAnnouncementAction(id, pinned);
-    setMessage(result.message ?? null);
+    notifyActionResult(result);
     router.refresh();
     setPendingId(null);
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {message ? (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
-          {message}
-        </div>
-      ) : null}
-
       <Card>
         <CardHeader className="gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -205,8 +200,7 @@ export function AnnouncementManagement({
                 ) : (
                   announcements.map((item) => {
                     const isPublished = !!item.published_at;
-                    const isExpired =
-                      item.expires_at && new Date(item.expires_at) < new Date();
+                    const isExpired = item.expires_at ? isPastInTimeZone(item.expires_at) : false;
 
                     return (
                       <tr key={item.id} className="border-t border-zinc-100 dark:border-zinc-800">
@@ -232,12 +226,12 @@ export function AnnouncementManagement({
                         </td>
                         <td className="px-3 py-3 text-zinc-500">
                           {item.published_at
-                            ? new Date(item.published_at).toLocaleDateString("mn-MN")
+                            ? formatDateMn(item.published_at)
                             : "—"}
                         </td>
                         <td className="px-3 py-3 text-zinc-500">
                           {item.expires_at
-                            ? new Date(item.expires_at).toLocaleDateString("mn-MN")
+                            ? formatDateMn(item.expires_at)
                             : "—"}
                         </td>
                         <td className="px-3 py-3">

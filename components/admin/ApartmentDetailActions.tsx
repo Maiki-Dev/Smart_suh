@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { UserPlus, Trash2 } from "lucide-react";
 import { deleteApartmentAction } from "@/app/admin/apartments/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { notifyActionResult } from "@/lib/hooks/use-action-toast";
 
 export function ApartmentDetailActions({
   apartmentId,
@@ -21,8 +22,6 @@ export function ApartmentDetailActions({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="mt-6 flex flex-col gap-4">
@@ -55,15 +54,13 @@ export function ApartmentDetailActions({
         <CardContent className="flex flex-col gap-3">
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             <strong>Идэвхгүй болгох</strong> (жагсаалтын Ban товч) нь орон сууцийг &quot;Хоосон&quot; болгоно — устгах биш.
-            Бүрмосон устгахын тулд доорх товчийг ашиглана.
+            Сангаас устгахын тулд доорх товчийг ашиглана.
           </p>
           {!canDelete && deleteBlockers.length > 0 ? (
             <p className="text-xs text-amber-700 dark:text-amber-300">
               Устгах боломжгүй: {deleteBlockers.join(", ")}
             </p>
           ) : null}
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
           <Button
             type="button"
             variant="outline"
@@ -71,16 +68,12 @@ export function ApartmentDetailActions({
             disabled={!canDelete || pending}
             className="w-fit border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300"
             onClick={() => {
-              if (!confirm("Энэ орон сууцийг бүрмосон устгах уу? Энэ үйлдлийг буцаах боломжгүй.")) return;
+              if (!confirm("Энэ орон сууцийг сангаас устгах уу? Энэ үйлдлийг буцаах боломжгүй.")) return;
               startTransition(async () => {
-                setError(null);
-                setMessage(null);
                 const result = await deleteApartmentAction(apartmentId);
-                if (result.status === "success") {
+                if (notifyActionResult(result, "Орон сууц амжилттай устгагдлаа")) {
                   router.push("/admin/apartments");
                   router.refresh();
-                } else {
-                  setError(result.message ?? "Алдаа гарлаа");
                 }
               });
             }}

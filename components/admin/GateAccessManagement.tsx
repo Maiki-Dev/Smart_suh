@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { gateActionLabel } from "@/lib/admin/format";
+import { formatDateTimeMn } from "@/lib/format/datetime";
 import type { GateAccessLogAdminRow } from "@/lib/queries/gate_access_logs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ export function GateAccessManagement({
                 logs.map((log) => (
                   <tr key={log.id} className="border-t border-zinc-100 dark:border-zinc-800">
                     <td className="px-3 py-3 whitespace-nowrap">
-                      {new Date(log.created_at).toLocaleString("mn-MN")}
+                      {formatDateTimeMn(log.created_at)}
                     </td>
                     <td className="px-3 py-3">{log.plate_number ?? "—"}</td>
                     <td className="px-3 py-3">
