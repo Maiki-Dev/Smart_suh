@@ -33,7 +33,7 @@ export default async function AdminVehiclesPage({
         ctx={ctx}
         activeSegment="vehicles"
         pageTitle="Машин"
-        pageSubtitle="Орон сууц бүрт нэг үндсэн машин, гацааны эрх автоматаар"
+        pageSubtitle="Орон сууц бүрт нэг үндсэн машин, Зогсоолын эрх автоматаар"
       >
         <VehicleManagement
           vehicles={vehiclesRes.data}

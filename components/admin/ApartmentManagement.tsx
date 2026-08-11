@@ -88,7 +88,7 @@ function ApartmentFormDialog({
             ) : null}
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="tower">Цамхаг</Label>
+            <Label htmlFor="tower">Байр</Label>
             <Input id="tower" name="tower" defaultValue={apartment?.tower ?? ""} />
           </div>
           <div className="flex flex-col gap-2">
@@ -204,7 +204,7 @@ export function ApartmentManagement({
               <thead className="bg-zinc-50 text-left text-[11px] uppercase tracking-wider text-zinc-500 dark:bg-zinc-900/60">
                 <tr>
                   <th className="px-3 py-3">Барилга</th>
-                  <th className="px-3 py-3">Цамхаг</th>
+                  <th className="px-3 py-3">Байр</th>
                   <th className="px-3 py-3">Орц</th>
                   <th className="px-3 py-3">Давхар</th>
                   <th className="px-3 py-3">Орон сууц</th>
@@ -276,7 +276,6 @@ export function ApartmentManagement({
                             variant="ghost"
                             disabled={pendingId === apt.id}
                             onClick={() => toggleStatus(apt)}
-                            title={apt.status === "VACANT" ? "Идэвхжүүлэх" : "Хоосон болгох (устгах биш)"}
                           >
                             {apt.status === "VACANT" ? (
                               <CheckCircle2 className="size-4 text-emerald-600" />
