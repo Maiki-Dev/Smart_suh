@@ -31,13 +31,13 @@ export interface ResidentNavItem {
 }
 
 export const RESIDENT_NAV_ITEMS: ResidentNavItem[] = [
-  { label: 'Home',           href: '/resident',               icon: HomeIcon,         segment: '' },
-  { label: 'Payments',       href: '/resident/payments',      icon: CreditCardIcon,   segment: 'payments' },
-  { label: 'Vehicle',        href: '/resident/vehicle',       icon: CarIcon,          segment: 'vehicle' },
-  { label: 'Visitors',       href: '/resident/visitors',      icon: UserPlusIcon,     segment: 'visitors' },
-  { label: 'Maintenance',    href: '/resident/maintenance',   icon: WrenchIcon,       segment: 'maintenance' },
-  { label: 'Announcements',  href: '/resident/announcements', icon: MegaphoneIcon,    segment: 'announcements' },
-  { label: 'Notifications',  href: '/resident/notifications', icon: BellIcon,         segment: 'notifications' },
+  { label: 'Нүүр',        href: '/resident',               icon: HomeIcon,         segment: '' },
+  { label: 'Төлбөр',      href: '/resident/payments',      icon: CreditCardIcon,   segment: 'payments' },
+  { label: 'Машин',       href: '/resident/vehicle',       icon: CarIcon,          segment: 'vehicle' },
+  { label: 'Зочин',       href: '/resident/visitors',      icon: UserPlusIcon,     segment: 'visitors' },
+  { label: 'Засвар',      href: '/resident/maintenance',   icon: WrenchIcon,       segment: 'maintenance' },
+  { label: 'Зарлал',      href: '/resident/announcements', icon: MegaphoneIcon,    segment: 'announcements' },
+  { label: 'Мэдэгдэл',    href: '/resident/notifications', icon: BellIcon,         segment: 'notifications' },
 ];
 
 export interface ResidentShellProps {
@@ -66,21 +66,21 @@ export function ResidentShell({
   const notifCount = Math.max(0, Math.min(99, unreadNotifications));
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col">
-      <div className="flex min-h-screen w-full flex-col md:flex-row">
+    <div className="h-dvh overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <div className="flex h-full w-full flex-col md:flex-row">
         {/* Desktop sidebar */}
-        <aside className="hidden md:flex md:w-60 lg:w-64 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-          <div className="flex items-center gap-2.5 px-5 h-14 border-b border-zinc-100 dark:border-zinc-800">
+        <aside className="hidden md:flex md:w-60 lg:w-64 h-full shrink-0 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 h-14 shrink-0 border-b border-zinc-100 dark:border-zinc-800">
             <div className="size-8 rounded-lg bg-emerald-600 flex items-center justify-center shrink-0">
               <Building2 className="size-4 text-white" />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-semibold text-sm tracking-tight truncate">Smart СӨХ</span>
-              <span className="text-[10px] uppercase tracking-wider text-zinc-500 truncate">Resident</span>
+              <span className="text-[10px] uppercase tracking-wider text-zinc-500 truncate">Оршин суугч</span>
             </div>
           </div>
 
-          <nav className="flex-1 px-2 py-3 overflow-y-auto">
+          <nav className="flex-1 min-h-0 px-2 py-3 overflow-y-auto overscroll-contain">
             <div className="grid grid-cols-1 gap-0.5">
               {RESIDENT_NAV_ITEMS.map((item) => {
                 const active = item.segment === activeSegment;
@@ -110,10 +110,10 @@ export function ResidentShell({
             </div>
           </nav>
 
-          <div className="p-3 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
+          <div className="p-3 shrink-0 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
             <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/5 ring-1 ring-emerald-100 dark:ring-emerald-500/10">
               <div className="text-[10px] uppercase tracking-wider text-emerald-700 dark:text-emerald-300 font-semibold mb-1">
-                My apartment
+                Миний орон сууц
               </div>
               <div className="text-lg font-semibold tracking-tight">{apartmentLabel}</div>
               <div className="text-xs text-zinc-500 mt-0.5">{orgName}</div>
@@ -144,13 +144,13 @@ export function ResidentShell({
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 min-w-0 flex flex-col">
-          <header className="h-14 shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 sm:px-6 flex items-center justify-between gap-3 sticky top-0 z-30">
+        <main className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
+          <header className="h-14 shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 sm:px-6 flex items-center justify-between gap-3 z-30">
             <div className="flex items-center gap-2 min-w-0">
               <label
                 htmlFor="resident-nav-toggle"
                 className="md:hidden size-8 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 cursor-pointer shrink-0"
-                aria-label="Open menu"
+                aria-label="Цэс нээх"
               >
                 <MenuIcon className="size-4" />
               </label>
@@ -159,7 +159,7 @@ export function ResidentShell({
                   {apartmentLabel}
                 </div>
                 <h1 className="text-sm font-semibold tracking-tight truncate">
-                  {pageTitle ?? 'Home'}
+                  {pageTitle ?? 'Нүүр хуудас'}
                 </h1>
               </div>
             </div>
@@ -199,8 +199,8 @@ export function ResidentShell({
             activeSegment={activeSegment}
           />
 
-          {/* Body */}
-          <div className="flex-1 min-w-0 overflow-y-auto pb-24 md:pb-8">
+          {/* Body — scrollable content area */}
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24 md:pb-8">
             {pageSubtitle ? (
               <div className="px-4 sm:px-6 lg:px-8 pt-5 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/30 backdrop-blur">
                 <div className="flex flex-wrap items-end justify-between gap-3">
@@ -266,8 +266,8 @@ function MobileResidentNav({
     <>
       <input id="resident-nav-toggle" type="checkbox" className="peer sr-only" />
       <div className="md:hidden fixed inset-0 top-14 z-20 bg-black/40 dark:bg-black/60 opacity-0 pointer-events-none peer-checked:opacity-100 peer-checked:pointer-events-auto transition-opacity" aria-hidden="true" />
-      <aside className="md:hidden fixed left-0 top-14 bottom-0 z-30 w-72 -translate-x-full peer-checked:translate-x-0 transition-transform bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col">
-        <nav className="flex-1 px-2 py-3 overflow-y-auto">
+      <aside className="md:hidden fixed left-0 top-14 bottom-0 z-30 w-72 -translate-x-full peer-checked:translate-x-0 transition-transform bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col overflow-hidden">
+        <nav className="flex-1 min-h-0 px-2 py-3 overflow-y-auto overscroll-contain">
           <div className="grid grid-cols-1 gap-0.5">
             {RESIDENT_NAV_ITEMS.map((item) => {
               const active = item.segment === activeSegment;
@@ -300,11 +300,11 @@ function MobileResidentNav({
             })}
           </div>
         </nav>
-        <Separator className="bg-zinc-200 dark:bg-zinc-800" />
-        <div className="p-3 space-y-2">
+        <Separator className="bg-zinc-200 dark:bg-zinc-800 shrink-0" />
+        <div className="p-3 space-y-2 shrink-0">
           <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/5 ring-1 ring-emerald-100 dark:ring-emerald-500/10">
             <div className="text-[10px] uppercase tracking-wider text-emerald-700 dark:text-emerald-300 font-semibold mb-1">
-              My apartment
+              Миний орон сууц
             </div>
             <div className="text-lg font-semibold tracking-tight">{apartmentLabel}</div>
             <div className="text-xs text-zinc-500 mt-0.5">{orgName}</div>

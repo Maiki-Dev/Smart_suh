@@ -1,0 +1,240 @@
+"use client";
+
+import { useActionState, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
+import type { PaymentAdminRow } from "@/lib/queries/payments";
+import { recordPaymentAction, type PaymentActionState } from "@/app/admin/payments/actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatMNT, paymentMethodLabel, paymentRecordStatusLabel } from "@/lib/admin/format";
+
+const initialState: PaymentActionState = { status: "idle" };
+
+const PAYMENT_METHODS = [
+  "CASH",
+  "BANK_TRANSFER",
+  "QPAY",
+  "SOCIALPAY",
+  "CARD",
+  "OTHER",
+] as const;
+
+type OpenInvoiceOption = {
+  id: string;
+  label: string;
+  remaining_amount: number;
+};
+
+function PaymentFormDialog({
+  onClose,
+  openInvoices,
+}: {
+  onClose: () => void;
+  openInvoices: OpenInvoiceOption[];
+}) {
+  const router = useRouter();
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [state, formAction, pending] = useActionState(recordPaymentAction, initialState);
+  const [selectedInvoice, setSelectedInvoice] = useState(openInvoices[0]?.id ?? "");
+
+  useEffect(() => {
+    dialogRef.current?.showModal();
+  }, []);
+
+  useEffect(() => {
+    if (state.status === "success") {
+      router.refresh();
+      onClose();
+    }
+  }, [state.status, router, onClose]);
+
+  const selected = openInvoices.find((inv) => inv.id === selectedInvoice);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      className="fixed inset-0 z-50 m-auto w-[min(100%,560px)] rounded-xl border border-zinc-200 bg-white p-0 shadow-xl backdrop:bg-black/40 dark:border-zinc-800 dark:bg-zinc-900"
+      onClose={onClose}
+    >
+      <form action={formAction} className="flex flex-col">
+        <div className="border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+          <h3 className="text-lg font-semibold">Төлбөр бүртгэх</h3>
+        </div>
+        <div className="grid gap-4 px-5 py-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="invoice_id">Нэхэмжлэл</Label>
+            <select
+              id="invoice_id"
+              name="invoice_id"
+              value={selectedInvoice}
+              onChange={(e) => setSelectedInvoice(e.target.value)}
+              required
+              className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+            >
+              {openInvoices.length === 0 ? (
+                <option value="">Нээлттэй нэхэмжлэл байхгүй</option>
+              ) : (
+                openInvoices.map((inv) => (
+                  <option key={inv.id} value={inv.id}>
+                    {inv.label}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="amount">Дүн</Label>
+            <Input
+              id="amount"
+              name="amount"
+              type="number"
+              step="1"
+              min="1"
+              defaultValue={selected?.remaining_amount ?? ""}
+              key={selectedInvoice}
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="payment_method">Төлбөрийн хэлбэр</Label>
+            <select
+              id="payment_method"
+              name="payment_method"
+              defaultValue="CASH"
+              className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+            >
+              {PAYMENT_METHODS.map((method) => (
+                <option key={method} value={method}>
+                  {paymentMethodLabel(method)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="transaction_id">Гүйлгээний дугаар (заавал биш)</Label>
+            <Input id="transaction_id" name="transaction_id" />
+          </div>
+          {state.status === "error" && state.message ? (
+            <p className="text-sm text-destructive">{state.message}</p>
+          ) : null}
+        </div>
+        <div className="flex justify-end gap-2 border-t border-zinc-200 px-5 py-4 dark:border-zinc-800">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Болих
+          </Button>
+          <Button type="submit" disabled={pending || openInvoices.length === 0}>
+            {pending ? "Бүртгэж байна..." : "Бүртгэх"}
+          </Button>
+        </div>
+      </form>
+    </dialog>
+  );
+}
+
+type Filters = {
+  q?: string;
+  method?: string;
+};
+
+export function PaymentManagement({
+  payments,
+  openInvoices,
+  filters,
+  total,
+}: {
+  payments: PaymentAdminRow[];
+  openInvoices: OpenInvoiceOption[];
+  filters: Filters;
+  total: number;
+}) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <Card>
+        <CardHeader className="gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <CardTitle>Төлбөр</CardTitle>
+            <p className="text-sm text-zinc-500 mt-1">Нийт {total} төлбөр</p>
+          </div>
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="size-4" />
+            Төлбөр бүртгэх
+          </Button>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <form method="get" className="grid gap-3 md:grid-cols-3">
+            <Input name="q" placeholder="Хайлт..." defaultValue={filters.q ?? ""} />
+            <select
+              name="method"
+              defaultValue={filters.method ?? ""}
+              className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+            >
+              <option value="">Бүх хэлбэр</option>
+              {PAYMENT_METHODS.map((method) => (
+                <option key={method} value={method}>
+                  {paymentMethodLabel(method)}
+                </option>
+              ))}
+            </select>
+            <Button type="submit" variant="outline">
+              Шүүх
+            </Button>
+          </form>
+
+          <div className="overflow-x-auto rounded-xl ring-1 ring-zinc-200 dark:ring-zinc-800">
+            <table className="w-full min-w-[980px] text-sm">
+              <thead className="bg-zinc-50 text-left text-[11px] uppercase tracking-wider text-zinc-500 dark:bg-zinc-900/60">
+                <tr>
+                  <th className="px-3 py-3">Огноо</th>
+                  <th className="px-3 py-3">Орон сууц</th>
+                  <th className="px-3 py-3">Нэхэмжлэл</th>
+                  <th className="px-3 py-3">Дүн</th>
+                  <th className="px-3 py-3">Хэлбэр</th>
+                  <th className="px-3 py-3">Гүйлгээ</th>
+                  <th className="px-3 py-3">Төлөв</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-3 py-10 text-center text-zinc-500">
+                      Төлбөр олдсонгүй
+                    </td>
+                  </tr>
+                ) : (
+                  payments.map((payment) => (
+                    <tr key={payment.id} className="border-t border-zinc-100 dark:border-zinc-800">
+                      <td className="px-3 py-3">
+                        {new Date(payment.paid_at).toLocaleString("mn-MN")}
+                      </td>
+                      <td className="px-3 py-3">
+                        {[payment.building_name, payment.apartment_number].join(" · ")}
+                      </td>
+                      <td className="px-3 py-3">{payment.invoice_number ?? "—"}</td>
+                      <td className="px-3 py-3 tabular-nums">{formatMNT(payment.amount)}</td>
+                      <td className="px-3 py-3">{paymentMethodLabel(payment.payment_method)}</td>
+                      <td className="px-3 py-3">{payment.transaction_id ?? "—"}</td>
+                      <td className="px-3 py-3">{paymentRecordStatusLabel(payment.status)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {dialogOpen ? (
+        <PaymentFormDialog
+          key="payment-form"
+          onClose={() => setDialogOpen(false)}
+          openInvoices={openInvoices}
+        />
+      ) : null}
+    </div>
+  );
+}

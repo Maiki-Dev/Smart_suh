@@ -37,24 +37,24 @@ export interface AdminNavItem {
 }
 
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
-  { label: 'Dashboard',   href: '/admin',            icon: LayoutDashboard, segment: '' },
-  { label: 'Apartments',  href: '/admin/apartments', icon: Building2,       segment: 'apartments' },
-  { label: 'Residents',   href: '/admin/residents',  icon: Users,           segment: 'residents' },
-  { label: 'Invoices',    href: '/admin/invoices',   icon: FileText,        segment: 'invoices' },
-  { label: 'Payments',    href: '/admin/payments',   icon: CreditCard,      segment: 'payments' },
-  { label: 'Vehicles',    href: '/admin/vehicles',   icon: Car,             segment: 'vehicles' },
-  { label: 'Gate Access', href: '/admin/gate-access', icon: Waypoints,      segment: 'gate-access' },
-  { label: 'Visitors',    href: '/admin/visitors',   icon: UserPlus,        segment: 'visitors' },
-  { label: 'Maintenance', href: '/admin/maintenance', icon: Wrench,         segment: 'maintenance' },
-  { label: 'Announcements', href: '/admin/announcements', icon: Megaphone,  segment: 'announcements' },
-  { label: 'Reports',     href: '/admin/reports',    icon: BarChart3,       segment: 'reports' },
-  { label: 'Settings',    href: '/admin/settings',   icon: SettingsIcon,    segment: 'settings' },
+  { label: 'Хянах самбар', href: '/admin',            icon: LayoutDashboard, segment: '' },
+  { label: 'Орон сууц',    href: '/admin/apartments', icon: Building2,       segment: 'apartments' },
+  { label: 'Оршин суугч',  href: '/admin/residents',  icon: Users,           segment: 'residents' },
+  { label: 'Нэхэмжлэл',    href: '/admin/invoices',   icon: FileText,        segment: 'invoices' },
+  { label: 'Төлбөр',       href: '/admin/payments',   icon: CreditCard,      segment: 'payments' },
+  { label: 'Машин',        href: '/admin/vehicles',   icon: Car,             segment: 'vehicles' },
+  { label: 'Гацаа',        href: '/admin/gate-access', icon: Waypoints,      segment: 'gate-access' },
+  { label: 'Зочин',        href: '/admin/visitors',   icon: UserPlus,        segment: 'visitors' },
+  { label: 'Засвар',       href: '/admin/maintenance', icon: Wrench,         segment: 'maintenance' },
+  { label: 'Зарлал',       href: '/admin/announcements', icon: Megaphone,    segment: 'announcements' },
+  { label: 'Тайлан',       href: '/admin/reports',    icon: BarChart3,       segment: 'reports' },
+  { label: 'Тохиргоо',     href: '/admin/settings',   icon: SettingsIcon,    segment: 'settings' },
 ];
 
 export const ROLE_BADGE: Record<string, { label: string; className: string }> = {
-  SUPER_ADMIN: { label: 'Super Admin', className: 'bg-emerald-600 text-white' },
-  HOA_ADMIN:   { label: 'HOA Admin',   className: 'bg-emerald-100 text-emerald-700' },
-  OPERATOR:    { label: 'Operator',    className: 'bg-zinc-100 text-zinc-700' },
+  SUPER_ADMIN: { label: 'Супер админ', className: 'bg-emerald-600 text-white' },
+  HOA_ADMIN:   { label: 'СӨХ админ',   className: 'bg-emerald-100 text-emerald-700' },
+  OPERATOR:    { label: 'Оператор',    className: 'bg-zinc-100 text-zinc-700' },
 };
 
 export interface AdminShellProps {
@@ -82,28 +82,28 @@ export function AdminShell({
   const orgName = ctx.user.organization?.name ?? '—';
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
-      <div className="flex min-h-screen w-full">
-        {/* Desktop sidebar */}
-        <aside className="hidden md:flex md:w-64 lg:w-72 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-          <div className="flex items-center gap-2.5 px-5 h-14 border-b border-zinc-100 dark:border-zinc-800">
+    <div className="h-dvh overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <div className="flex h-full w-full">
+        {/* Desktop sidebar — fixed height, nav scrolls independently */}
+        <aside className="hidden md:flex md:w-64 lg:w-72 h-full shrink-0 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 h-14 shrink-0 border-b border-zinc-100 dark:border-zinc-800">
             <div className="size-8 rounded-lg bg-emerald-600 flex items-center justify-center shrink-0">
               <Building2 className="size-4 text-white" />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-semibold text-sm tracking-tight truncate">Smart СӨХ</span>
-              <span className="text-[10px] uppercase tracking-wider text-zinc-500 truncate">Admin Console</span>
+              <span className="text-[10px] uppercase tracking-wider text-zinc-500 truncate">Админ самбар</span>
             </div>
           </div>
 
-          <div className="px-3 py-3">
+          <div className="px-3 py-3 shrink-0">
             <div className="flex items-center gap-2 h-8 px-2 rounded-md bg-zinc-50 dark:bg-zinc-800/60 ring-1 ring-zinc-200 dark:ring-zinc-800 text-zinc-500">
               <SearchIcon className="size-3.5 shrink-0" />
               <span className="text-xs">Хайлт (Ctrl+K)</span>
             </div>
           </div>
 
-          <nav className="flex-1 px-2 pb-3 overflow-y-auto">
+          <nav className="flex-1 min-h-0 px-2 pb-3 overflow-y-auto overscroll-contain">
             <div className="grid grid-cols-1 gap-0.5">
               {ADMIN_NAV_ITEMS.map((item) => {
                 const active = item.segment === activeSegment;
@@ -113,7 +113,7 @@ export function AdminShell({
                     key={item.segment}
                     href={item.href}
                     className={cn(
-                      'group flex items-center gap-2.5 h-8.5 px-2.5 rounded-md text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40',
+                      'group flex items-center gap-2.5 h-9 px-2.5 rounded-md text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40',
                       active
                         ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
                         : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/70'
@@ -127,7 +127,7 @@ export function AdminShell({
             </div>
           </nav>
 
-          <div className="px-3 py-3 border-t border-zinc-100 dark:border-zinc-800 space-y-1.5">
+          <div className="px-3 py-3 shrink-0 border-t border-zinc-100 dark:border-zinc-800 space-y-1.5">
             <div className="flex items-center gap-2.5 p-2 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors">
               <Avatar size="sm" className="ring-2 ring-emerald-500/10">
                 <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">
@@ -154,9 +154,9 @@ export function AdminShell({
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0 flex flex-col">
-          {/* Top bar (desktop + shared with mobile) */}
-          <header className="h-14 shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 sm:px-6 flex items-center justify-between gap-3 sticky top-0 z-30">
+        <main className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
+          {/* Top bar */}
+          <header className="h-14 shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 sm:px-6 flex items-center justify-between gap-3 z-30">
             <div className="flex items-center gap-2 min-w-0">
               <MobileNavButton />
               <div className="min-w-0">
@@ -164,7 +164,7 @@ export function AdminShell({
                   {orgName}
                 </div>
                 <h1 className="text-sm font-semibold tracking-tight truncate">
-                  {pageTitle ?? 'Dashboard'}
+                  {pageTitle ?? 'Хянах самбар'}
                 </h1>
               </div>
             </div>
@@ -197,8 +197,8 @@ export function AdminShell({
             activeSegment={activeSegment}
           />
 
-          {/* Page body */}
-          <div className="flex-1 min-w-0 overflow-y-auto">
+          {/* Page body — only this area scrolls */}
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             {pageSubtitle ? (
               <div className="px-4 sm:px-6 lg:px-8 pt-5 pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/30 backdrop-blur">
                 <div className="flex items-end justify-between gap-3 flex-wrap">
@@ -249,7 +249,7 @@ function MobileNavButton() {
     <label
       htmlFor="mobile-nav-toggle"
       className="md:hidden size-8 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 cursor-pointer shrink-0"
-      aria-label="Open navigation"
+      aria-label="Цэс нээх"
     >
       <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="4" y1="7" x2="20" y2="7" />
@@ -275,15 +275,15 @@ function MobileNav({
     <>
       <input id="mobile-nav-toggle" type="checkbox" className="peer sr-only" />
       <div className="md:hidden fixed inset-0 top-14 z-20 bg-black/40 dark:bg-black/60 opacity-0 pointer-events-none peer-checked:opacity-100 peer-checked:pointer-events-auto transition-opacity" aria-hidden="true" />
-      <aside className="md:hidden fixed left-0 top-14 bottom-0 z-30 w-72 -translate-x-full peer-checked:translate-x-0 transition-transform bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col">
-        <div className="px-3 py-3">
+      <aside className="md:hidden fixed left-0 top-14 bottom-0 z-30 w-72 -translate-x-full peer-checked:translate-x-0 transition-transform bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col overflow-hidden">
+        <div className="px-3 py-3 shrink-0">
           <div className="flex items-center gap-2 h-8 px-2 rounded-md bg-zinc-50 dark:bg-zinc-800/60 ring-1 ring-zinc-200 dark:ring-zinc-800 text-zinc-500">
             <SearchIcon className="size-3.5 shrink-0" />
             <span className="text-xs">Хайлт</span>
           </div>
         </div>
 
-        <nav className="flex-1 px-2 pb-3 overflow-y-auto">
+        <nav className="flex-1 min-h-0 px-2 pb-3 overflow-y-auto overscroll-contain">
           <div className="grid grid-cols-1 gap-0.5">
             {ADMIN_NAV_ITEMS.map((item) => {
               const active = item.segment === activeSegment;
@@ -311,8 +311,8 @@ function MobileNav({
           </div>
         </nav>
 
-        <Separator className="bg-zinc-200 dark:bg-zinc-800" />
-        <div className="p-3 space-y-2">
+        <Separator className="bg-zinc-200 dark:bg-zinc-800 shrink-0" />
+        <div className="p-3 space-y-2 shrink-0">
           <div className="flex items-center gap-2.5 p-2 rounded-md bg-zinc-50 dark:bg-zinc-800/60">
             <Avatar size="sm">
               <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">

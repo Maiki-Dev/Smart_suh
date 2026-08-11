@@ -30,6 +30,12 @@ import { listAnnouncementsByOrganization } from '@/lib/queries/announcements';
 import { listMaintenanceRequestsByOrganization } from '@/lib/queries/maintenance';
 import type { Announcement, MaintenanceRequest } from '@/types';
 import { cn } from '@/lib/utils';
+import {
+  activityKindLabel,
+  maintenanceCategoryLabel,
+  maintenancePriorityLabel,
+  maintenanceStatusLabel,
+} from '@/lib/admin/format';
 
 interface MetricCardProps {
   label: string;
@@ -116,58 +122,58 @@ export default async function AdminPage() {
 
   const statsArr: Array<[keyof AdminOverviewStats, MetricCardProps]> = [
     ['total_apartments', {
-      label: 'Total apartments',
+      label: 'Нийт орон сuuц',
       value: stats.total_apartments,
-      sub: `${stats.total_residents} Residents total`,
+      sub: `${stats.total_residents} оршин сuuгч нийт`,
       accent: 'border-l-emerald-500',
       icon: Building2Icon,
       iconClassName: 'text-emerald-500',
     }],
     ['total_residents', {
-      label: 'Total residents',
+      label: 'Нийт оршин сuuгч',
       value: stats.total_residents,
-      sub: 'Active status included',
+      sub: 'Идэвхтэй төлөвтэй',
       accent: 'border-l-sky-500',
       icon: UsersIcon,
       iconClassName: 'text-sky-500',
     }],
     ['monthly_income', {
-      label: 'Monthly income',
+      label: 'Сарын орлого',
       value: formatMNT(stats.monthly_income),
-      sub: 'Paid amount (all invoices)',
+      sub: 'Төлсөн дүн (бүх нэхэмжлэл)',
       delta: stats.monthly_income > 0 ? { value: '+8.3%', tone: 'up' as const } : undefined,
       accent: 'border-l-violet-500',
       icon: WalletIcon,
       iconClassName: 'text-violet-500',
     }],
     ['total_debt', {
-      label: 'Total debt',
+      label: 'Нийт өр',
       value: formatMNT(stats.total_debt),
-      sub: `${stats.overdue_invoices} overdue · ${stats.pending_invoices} pending`,
+      sub: `${stats.overdue_invoices} хугацаа хэтэрсэн · ${stats.pending_invoices} хүлээгдэж буй`,
       accent: 'border-l-amber-500',
       icon: TrendingUpIcon,
       iconClassName: 'text-amber-500',
     }],
     ['active_vehicles', {
-      label: 'Active vehicles',
+      label: 'Идэвхтэй машин',
       value: stats.active_vehicles,
-      sub: 'Gate access enabled',
+      sub: 'Гацааны эрх идэвхтэй',
       accent: 'border-l-teal-500',
       icon: CarIcon,
       iconClassName: 'text-teal-500',
     }],
     ['disabled_vehicles', {
-      label: 'Disabled vehicles',
+      label: 'Идэвхгүй машин',
       value: stats.disabled_vehicles,
-      sub: 'Access blocked',
+      sub: 'Эрх хаагдсан',
       accent: 'border-l-zinc-400 dark:border-l-zinc-600',
       icon: BanIcon,
       iconClassName: 'text-zinc-500',
     }],
     ['open_maintenance', {
-      label: 'Open maintenance',
+      label: 'Нээлттэй засвар',
       value: stats.open_maintenance,
-      sub: 'OPEN / IN_PROGRESS / ON_HOLD',
+      sub: 'Нээлттэй / Явцад / Түр зогссон',
       accent: 'border-l-rose-500',
       icon: WrenchIcon,
       iconClassName: 'text-rose-500',
@@ -207,7 +213,7 @@ export default async function AdminPage() {
                   <CardDescription className="text-sm">Төлбөр, засвар, гатаа, нэхэмжлэл — ганц цуваанаар.</CardDescription>
                 </div>
                 <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
-                  Last 8 entries
+                  Сүүлийн 8 бичлэг
                 </Badge>
               </div>
             </CardHeader>
@@ -270,7 +276,7 @@ export default async function AdminPage() {
                 </CardTitle>
                 <CardDescription className="text-sm">Олон сууцанд нийтлэгдсэн мэдэгдэл.</CardDescription>
               </div>
-              <Badge variant="secondary">Announcements</Badge>
+              <Badge variant="secondary">Зарлал</Badge>
             </CardHeader>
             <CardContent className="pt-0">
               <AnnouncementsList data={announcements} />
@@ -286,7 +292,7 @@ export default async function AdminPage() {
                 </CardTitle>
                 <CardDescription className="text-sm">Шинэ ба явцад байгаа хүсэлтүүд.</CardDescription>
               </div>
-              <Badge variant="secondary">Maintenance</Badge>
+              <Badge variant="secondary">Засвар</Badge>
             </CardHeader>
             <CardContent className="pt-0">
               <MaintenanceList data={requests} />
@@ -359,12 +365,7 @@ function ActivityList({ items }: { items: AdminRecentActivity[] }) {
 }
 
 function kindLabel(k: AdminRecentActivity['kind']) {
-  switch (k) {
-    case 'payment': return 'Payment';
-    case 'maintenance': return 'Maintenance';
-    case 'gate': return 'Gate';
-    case 'invoice': return 'Invoice';
-  }
+  return activityKindLabel(k);
 }
 
 function kindTone(k: AdminRecentActivity['kind']) {
@@ -409,7 +410,7 @@ function AnnouncementsList({ data }: { data: Announcement[] }) {
             <div className="flex items-center gap-2">
               {pinned ? (
                 <Badge className="text-[10px] uppercase tracking-wider bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-                  PINNED
+                  ОНЦЛОСОН
                 </Badge>
               ) : null}
               <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">{row.title}</span>
@@ -442,11 +443,11 @@ function MaintenanceList({ data }: { data: MaintenanceRequest[] }) {
             </div>
             <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px]">
               <Badge className={maintenanceStatusBadge(row.status)}>
-                {row.status}
+                {maintenanceStatusLabel(row.status)}
               </Badge>
-              <Badge variant="secondary">{row.category}</Badge>
+              <Badge variant="secondary">{maintenanceCategoryLabel(row.category)}</Badge>
               <span className={cn('rounded px-1.5 py-0.5 uppercase tracking-wider font-semibold', priorityBadge(row.priority))}>
-                {row.priority}
+                {maintenancePriorityLabel(row.priority)}
               </span>
             </div>
           </div>

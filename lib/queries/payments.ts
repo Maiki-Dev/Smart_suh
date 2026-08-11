@@ -8,6 +8,13 @@ import type {
   ListResult,
 } from '@/types';
 
+export interface PaymentAdminRow extends Payment {
+  invoice_number: string | null;
+  apartment_number: string;
+  building_name: string;
+  resident_name: string | null;
+}
+
 const SELECT_SQL = `
   SELECT id, organization_id, apartment_id, invoice_id, amount,
          payment_method, transaction_id, status, paid_at, created_by, created_at
@@ -144,6 +151,104 @@ export async function listPaymentsByOrganization(
     ),
     query<{ count: string }>(
       `SELECT COUNT(*)::text AS count FROM payments ${where}`,
+      params,
+    ),
+  ]);
+
+  return {
+    data: dataRes.rows,
+    total: parseInt(countRes.rows[0].count, 10),
+    limit,
+    offset,
+  };
+}
+
+export async function listPaymentsAdminView(
+  organizationId: string | null,
+  opts: PaginationOptions & {
+    payment_method?: PaymentMethod;
+    status?: PaymentStatus;
+    apartment_id?: string;
+    search?: string;
+  } = {},
+): Promise<ListResult<PaymentAdminRow>> {
+  const {
+    limit = 100,
+    offset = 0,
+    orderBy = 'paid_at',
+    orderDirection = 'DESC',
+    payment_method,
+    status,
+    apartment_id,
+    search,
+  } = opts;
+
+  const safeOrder = ['amount', 'payment_method', 'status', 'paid_at', 'created_at'].includes(orderBy)
+    ? orderBy
+    : 'paid_at';
+  const safeDir = orderDirection === 'ASC' ? 'ASC' : 'DESC';
+
+  const clauses: string[] = [];
+  const params: unknown[] = [];
+  let idx = 1;
+
+  if (organizationId) {
+    clauses.push(`p.organization_id = $${idx++}`);
+    params.push(organizationId);
+  }
+  if (payment_method) {
+    clauses.push(`p.payment_method = $${idx++}::pay_method`);
+    params.push(payment_method);
+  }
+  if (status) {
+    clauses.push(`p.status = $${idx++}::pay_status`);
+    params.push(status);
+  }
+  if (apartment_id) {
+    clauses.push(`p.apartment_id = $${idx++}`);
+    params.push(apartment_id);
+  }
+  if (search?.trim()) {
+    const like = `%${search.trim().toLowerCase()}%`;
+    clauses.push(`(
+      LOWER(COALESCE(p.transaction_id, '')) LIKE $${idx}
+      OR LOWER(COALESCE(i.invoice_number, '')) LIKE $${idx}
+      OR LOWER(a.apartment_number) LIKE $${idx}
+      OR LOWER(b.name) LIKE $${idx}
+    )`);
+    params.push(like);
+    idx++;
+  }
+
+  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+
+  const [dataRes, countRes] = await Promise.all([
+    query<PaymentAdminRow>(
+      `
+        SELECT p.id, p.organization_id, p.apartment_id, p.invoice_id, p.amount,
+               p.payment_method, p.transaction_id, p.status, p.paid_at, p.created_by, p.created_at,
+               i.invoice_number, a.apartment_number, b.name AS building_name,
+               NULLIF(TRIM(CONCAT(r.first_name, ' ', r.last_name)), '') AS resident_name
+          FROM payments p
+          JOIN apartments a ON a.id = p.apartment_id
+          JOIN buildings b ON b.id = a.building_id
+          LEFT JOIN invoices i ON i.id = p.invoice_id
+          LEFT JOIN residents r ON r.apartment_id = a.id AND r.is_owner = TRUE AND r.status = 'ACTIVE'
+          ${where}
+         ORDER BY p."${safeOrder}" ${safeDir}
+         LIMIT $${idx++} OFFSET $${idx++}
+      `,
+      [...params, limit, offset],
+    ),
+    query<{ count: string }>(
+      `
+        SELECT COUNT(*)::text AS count
+          FROM payments p
+          JOIN apartments a ON a.id = p.apartment_id
+          JOIN buildings b ON b.id = a.building_id
+          LEFT JOIN invoices i ON i.id = p.invoice_id
+          ${where}
+      `,
       params,
     ),
   ]);

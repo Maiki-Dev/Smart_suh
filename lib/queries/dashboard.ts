@@ -227,13 +227,13 @@ export async function getResidentOverviewStats(
       ),
       veh_list AS (
         SELECT json_agg(json_build_object(
-                 'id', id,
-                 'plate_number', plate_number,
-                 'vehicle_type', vehicle_type,
-                 'active', active,
-                 'gate_access', gate_access,
-                 'rfid_number', rfid_number
-               ) ORDER BY plate_number) AS vehicles
+                 'id', v.id,
+                 'plate_number', v.plate_number,
+                 'vehicle_type', v.vehicle_type,
+                 'active', v.active,
+                 'gate_access', v.gate_access,
+                 'rfid_number', v.rfid_number
+               ) ORDER BY v.plate_number) AS vehicles
           FROM vehicles v
           JOIN user_apt ua ON v.apartment_id = ua.id
          WHERE v.organization_id = $1
@@ -259,8 +259,8 @@ export async function getResidentOverviewStats(
          WHERE user_id = $2 AND organization_id = $1 AND is_read = FALSE
       )
       SELECT
-        (SELECT CASE WHEN COUNT(*) = 0 THEN NULL ELSE to_jsonb(ua) FROM user_apt ua) AS apartment,
-        (SELECT CASE WHEN COUNT(*) = 0 THEN NULL ELSE to_jsonb(ci) FROM current_inv ci) AS current_month_invoice,
+        (SELECT to_jsonb(ua) FROM user_apt ua LIMIT 1) AS apartment,
+        (SELECT to_jsonb(ci) FROM current_inv ci LIMIT 1) AS current_month_invoice,
         COALESCE(ROUND(ad.total_debt)::bigint::int, 0) AS total_debt,
         COALESCE(vl.vehicles, '[]'::json) AS vehicles,
         COALESCE(pc.active_visitor_passes, 0) AS active_visitor_passes,

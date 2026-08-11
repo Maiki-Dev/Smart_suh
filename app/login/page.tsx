@@ -54,7 +54,7 @@ export default function LoginPage({
                 Smart СӨХ
               </span>
               <span className="text-emerald-100 text-xs">
-                Management System
+                Удирдлагын систем
               </span>
             </div>
           </div>
@@ -89,7 +89,7 @@ export default function LoginPage({
           </div>
 
           <div className="text-emerald-100/60 text-xs">
-            © 2026 Smart СӨХ. Created by Ankhbayar Zoltuya.
+            © 2026 Smart СӨХ. Анхбаяр Золтуяа хөгжүүлсэн.
           </div>
         </div>
       </div>

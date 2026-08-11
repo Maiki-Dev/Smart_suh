@@ -33,6 +33,11 @@ import { listInvoicesByApartment } from '@/lib/queries/invoices';
 import { listAnnouncementsByOrganization } from '@/lib/queries/announcements';
 import { listGateAccessLogsForApartment } from '@/lib/queries/gate_access_logs';
 import { cn } from '@/lib/utils';
+import {
+  gateActionLabel,
+  invoiceStatusLabel,
+  vehicleTypeLabel,
+} from '@/lib/admin/format';
 import type { Invoice, Announcement, GateAccessLog } from '@/types';
 
 function formatMNT(n: number): string {
@@ -170,7 +175,7 @@ export default async function ResidentDashboardPage() {
                 </CardTitle>
                 <CardDescription className="text-sm">Сүүлийн орсон гарсан</CardDescription>
               </div>
-              <Badge variant="secondary">Last 6</Badge>
+              <Badge variant="secondary">Сүүлийн 6</Badge>
             </CardHeader>
             <CardContent className="pt-0">
               <GateLogList items={gateLogs} />
@@ -217,10 +222,10 @@ function ApartmentHeaderCard({
       <div className="absolute right-4 top-4 size-28 rounded-full bg-gradient-to-br from-emerald-500/10 to-teal-500/0 blur-2xl pointer-events-none" />
       <div className="relative flex items-center gap-2 mb-2">
         <span className="text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-medium">
-          Resident
+          Оршин сuuгч
         </span>
         <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
-          ACTIVE
+          Идэвхтэй
         </Badge>
       </div>
       <div className="relative flex flex-col gap-1 mb-3">
@@ -236,7 +241,7 @@ function ApartmentHeaderCard({
         <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold flex items-center gap-1.5">
             <HomeIcon className="size-3" />
-            My Apartment
+            Миний орон сuuц
           </span>
           <span className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
             {apt ? `${apt.tower ?? ''} · ${apt.apartment_number}`.replace(/^ · /, '') : '—'}
@@ -264,7 +269,7 @@ function MonthlyFeeCard({ stats }: { stats: ResidentOverviewStats }) {
       <div className="flex items-center gap-2 mb-3">
         <span className="text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold flex items-center gap-1.5">
           <WalletIcon className="size-3" />
-          Monthly fee
+          Сарын төлбөр
         </span>
       </div>
       <div className="flex flex-col gap-1 mb-3">
@@ -281,7 +286,7 @@ function MonthlyFeeCard({ stats }: { stats: ResidentOverviewStats }) {
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs text-zinc-500 dark:text-zinc-400">Энэ сарын төлөв</span>
             <Badge className={cn('text-[10px] uppercase tracking-wider', invoiceStatusBadge(inv.status))}>
-              {inv.status}
+              {invoiceStatusLabel(inv.status)}
             </Badge>
           </div>
           <div className="flex items-center justify-between gap-3 text-xs tabular-nums">
@@ -325,9 +330,9 @@ function DebtCard({ stats }: { stats: ResidentOverviewStats }) {
           hasDebt ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
         )}>
           {hasDebt ? (
-            <><AlertTriangleIcon className="size-3" /> Payment status</>
+            <><AlertTriangleIcon className="size-3" /> Төлбөрийн төлөв</>
           ) : (
-            <><CheckIcon className="size-3" /> Payment status</>
+            <><CheckIcon className="size-3" /> Төлбөрийн төлөв</>
           )}
         </span>
       </div>
@@ -356,7 +361,7 @@ function DebtCard({ stats }: { stats: ResidentOverviewStats }) {
       ) : (
         <div className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 rounded-md px-2 py-1 self-start">
           <CheckIcon className="size-3.5" />
-          Төлөв: PAID
+          Төлөв: Төлсөн
         </div>
       )}
     </div>
@@ -380,28 +385,28 @@ function QuickActionsCard({
     tone: string;
   }> = [
     {
-      label: 'Notifications',
+      label: 'Мэдэгдэл',
       count: unread,
       href: '/resident/notifications',
       icon: BellIcon,
       tone: 'bg-rose-500/10 text-rose-600 dark:text-rose-300',
     },
     {
-      label: 'Maintenance',
+      label: 'Засвар',
       count: openMaint,
       href: '/resident/maintenance',
       icon: WrenchIcon,
       tone: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
     },
     {
-      label: 'Visitors',
+      label: 'Зочин',
       count: visitors,
       href: '/resident/visitors',
       icon: UserPlusIcon,
       tone: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
     },
     {
-      label: 'Scan QR',
+      label: 'QR уншуулах',
       count: 'QR',
       href: '/resident/visitors',
       icon: ScanLineIcon,
@@ -412,7 +417,7 @@ function QuickActionsCard({
     <div className="relative bg-white dark:bg-zinc-900 rounded-xl ring-1 ring-zinc-200 dark:ring-zinc-800 border-l-4 border-l-sky-500 p-4 sm:p-5 overflow-hidden">
       <div className="flex items-center justify-between gap-2 mb-3">
         <span className="text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold">
-          Quick actions
+          Шууд үйлдлүүд
         </span>
         <span className="text-[11px] text-zinc-400">Шууд үйлдлүүд</span>
       </div>
@@ -491,7 +496,7 @@ function InvoiceTable({ data }: { data: Invoice[] }) {
             </div>
             <div className="col-span-2 sm:col-span-3 flex justify-end">
               <Badge className={cn('text-[10px] uppercase tracking-wider', invoiceStatusBadge(inv.status))}>
-                {inv.status}
+                {invoiceStatusLabel(inv.status)}
               </Badge>
             </div>
           </div>
@@ -531,7 +536,7 @@ function VehicleList({ vehicles }: { vehicles: VehicleRow[] }) {
                   {v.plate_number}
                 </span>
                 <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
-                  {v.vehicle_type}
+                  {vehicleTypeLabel(v.vehicle_type)}
                 </Badge>
               </div>
               <div className="mt-0.5 flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -594,10 +599,10 @@ function GateLogList({ items }: { items: GateAccessLog[] }) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-                  {l.action === 'ENTER' ? 'Орсон' : l.action === 'EXIT' ? 'Гарсан' : l.action}
+                  {gateActionLabel(l.action)}
                 </span>
                 <Badge variant="secondary" className="text-[9px] uppercase tracking-wider">
-                  {l.action}
+                  {gateActionLabel(l.action)}
                 </Badge>
               </div>
               <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
@@ -643,7 +648,7 @@ function AnnouncementFeed({ data }: { data: Announcement[] }) {
                 {pinned ? (
                   <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 text-[10px] uppercase tracking-wider inline-flex items-center gap-1">
                     <MegaphoneIcon className="size-3" />
-                    PINNED
+                    ОНЦЛОСОН
                   </Badge>
                 ) : null}
                 <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">

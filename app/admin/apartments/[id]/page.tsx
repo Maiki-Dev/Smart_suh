@@ -16,6 +16,9 @@ import {
 import {
   apartmentStatusLabel,
   formatMNT,
+  invoiceStatusLabel,
+  paymentMethodLabel,
+  paymentRecordStatusLabel,
   paymentStatusLabel,
   residentStatusLabel,
 } from '@/lib/admin/format';
@@ -180,7 +183,7 @@ export default async function AdminApartmentDetailPage({
                     <div>
                       <div className="font-medium">{invoice.invoice_number}</div>
                       <div className="text-xs text-zinc-500">
-                        {invoice.billing_year}/{invoice.billing_month} · {invoice.status}
+                        {invoice.billing_year}/{invoice.billing_month} · {invoiceStatusLabel(invoice.status)}
                       </div>
                     </div>
                     <div className="text-right tabular-nums">
@@ -205,7 +208,7 @@ export default async function AdminApartmentDetailPage({
                     <div>
                       <div className="font-medium tabular-nums">{formatMNT(payment.amount)}</div>
                       <div className="text-xs text-zinc-500">
-                        {payment.payment_method} · {payment.status}
+                        {paymentMethodLabel(payment.payment_method)} · {paymentRecordStatusLabel(payment.status)}
                       </div>
                     </div>
                     <div className="text-xs text-zinc-500">

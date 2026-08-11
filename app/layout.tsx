@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Smart СӨХ Management",
-  description: "Smart СӨХ Management System for Mongolia",
+  title: "Smart СӨХ удирдлага",
+  description: "Монголын орон сууцны удирдлагын систем",
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
       lang="mn"
       className={`${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">
+      <body className="min-h-full h-full flex flex-col overflow-x-hidden font-sans">
         <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>
