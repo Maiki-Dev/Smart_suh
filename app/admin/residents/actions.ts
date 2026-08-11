@@ -8,6 +8,7 @@ import {
   getScopedOrganizationId,
   resolveOrganizationIdForCreate,
 } from '@/lib/admin/org-scope';
+import { withTransaction } from '@/lib/db';
 import { getApartmentById } from '@/lib/queries/apartments';
 import {
   assignResidentApartment,
@@ -16,6 +17,11 @@ import {
   setResidentAsOwner,
   updateResident,
 } from '@/lib/queries/residents';
+import {
+  createResidentLoginAccount,
+  DEFAULT_RESIDENT_PASSWORD,
+  syncResidentLoginAccount,
+} from '@/lib/resident/provision-login';
 import type { ResidentStatus } from '@/types';
 
 export type ResidentActionState = {
@@ -44,6 +50,10 @@ const residentSchema = z.object({
   ),
 });
 
+const createResidentSchema = residentSchema.extend({
+  email: z.string().trim().email('И-мэйл оруулна уу'),
+});
+
 function formToObject(formData: FormData): Record<string, FormDataEntryValue> {
   return Object.fromEntries(formData.entries());
 }
@@ -62,7 +72,7 @@ export async function createResidentAction(
 ): Promise<ResidentActionState> {
   const ctx = await requireAdminRole();
   const organizationId = resolveOrganizationIdForCreate(ctx);
-  const parsed = residentSchema.safeParse(formToObject(formData));
+  const parsed = createResidentSchema.safeParse(formToObject(formData));
 
   if (!parsed.success) {
     return {
@@ -75,15 +85,30 @@ export async function createResidentAction(
   try {
     await assertApartmentInOrg(parsed.data.apartment_id, organizationId);
 
-    const resident = await createResident({
-      organization_id: organizationId,
-      apartment_id: parsed.data.apartment_id,
-      first_name: parsed.data.first_name,
-      last_name: parsed.data.last_name,
-      phone: parsed.data.phone ?? null,
-      email: parsed.data.email ?? null,
-      is_owner: false,
-      status: 'ACTIVE',
+    const resident = await withTransaction(async (tx) => {
+      const userId = await createResidentLoginAccount({
+        organization_id: organizationId,
+        email: parsed.data.email,
+        first_name: parsed.data.first_name,
+        last_name: parsed.data.last_name,
+        phone: parsed.data.phone ?? null,
+        client: tx,
+      });
+
+      return createResident(
+        {
+          organization_id: organizationId,
+          apartment_id: parsed.data.apartment_id,
+          user_id: userId,
+          first_name: parsed.data.first_name,
+          last_name: parsed.data.last_name,
+          phone: parsed.data.phone ?? null,
+          email: parsed.data.email,
+          is_owner: false,
+          status: 'ACTIVE',
+          client: tx,
+        },
+      );
     });
 
     if (parsed.data.is_owner) {
@@ -92,8 +117,12 @@ export async function createResidentAction(
 
     revalidatePath('/admin/residents');
     revalidatePath('/admin/apartments');
+    revalidatePath('/resident');
     revalidatePath(`/admin/apartments/${parsed.data.apartment_id}`);
-    return { status: 'success', message: 'Оршин суугч амжилттай бүртгэгдлээ' };
+    return {
+      status: 'success',
+      message: `Оршин суугч бүртгэгдлээ. Нэвтрэх эрх: ${parsed.data.email} · Анхны нууц үг: ${DEFAULT_RESIDENT_PASSWORD}`,
+    };
   } catch (error) {
     return {
       status: 'error',
@@ -130,8 +159,31 @@ export async function updateResidentAction(
       await assignResidentApartment(residentId, parsed.data.apartment_id);
     }
 
+    if (existing.user_id && parsed.data.email) {
+      await syncResidentLoginAccount({
+        user_id: existing.user_id,
+        organization_id: existing.organization_id,
+        email: parsed.data.email,
+        first_name: parsed.data.first_name,
+        last_name: parsed.data.last_name,
+        phone: parsed.data.phone ?? null,
+      });
+    }
+
+    let userId = existing.user_id;
+    if (!userId && parsed.data.email) {
+      userId = await createResidentLoginAccount({
+        organization_id: existing.organization_id,
+        email: parsed.data.email,
+        first_name: parsed.data.first_name,
+        last_name: parsed.data.last_name,
+        phone: parsed.data.phone ?? null,
+      });
+    }
+
     await updateResident(residentId, {
       apartment_id: parsed.data.apartment_id,
+      user_id: userId,
       first_name: parsed.data.first_name,
       last_name: parsed.data.last_name,
       phone: parsed.data.phone ?? null,
@@ -145,6 +197,7 @@ export async function updateResidentAction(
 
     revalidatePath('/admin/residents');
     revalidatePath('/admin/apartments');
+    revalidatePath('/resident');
     revalidatePath(`/admin/apartments/${parsed.data.apartment_id}`);
     return { status: 'success', message: 'Оршин суугч шинэчлэгдлээ' };
   } catch (error) {

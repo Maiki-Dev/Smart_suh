@@ -14,6 +14,20 @@ const SELECT_SQL = `
     FROM residents
 `;
 
+export async function getResidentByEmail(
+  organizationId: string,
+  email: string,
+  client?: DbClient,
+): Promise<Resident | null> {
+  const normalized = email.trim().toLowerCase();
+  const { rows } = await query<Resident>(
+    `${SELECT_SQL} WHERE organization_id = $1 AND LOWER(email) = $2 LIMIT 1`,
+    [organizationId, normalized],
+    client,
+  );
+  return rows[0] ?? null;
+}
+
 export async function getResidentById(
   id: string,
   client?: DbClient,

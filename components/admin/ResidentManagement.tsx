@@ -113,7 +113,18 @@ function ResidentFormDialog({
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="email">И-мэйл</Label>
-            <Input id="email" name="email" type="email" defaultValue={resident?.email ?? ""} />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              required={!resident}
+              defaultValue={resident?.email ?? ""}
+            />
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              {resident
+                ? "И-мэйл өөрчлөгдвөл холбоотой нэвтрэх эрхийн мэдээлэл шинэчлэгдэнэ."
+                : "И-мэйлээр шинэ нэвтрэх эрх автоматаар үүснэ. Анхны нууц үг: resident123"}
+            </p>
           </div>
           <label className="sm:col-span-2 flex items-center gap-2 text-sm">
             <input
@@ -211,6 +222,7 @@ export function ResidentManagement({
                   <th className="px-3 py-3">И-мэйл</th>
                   <th className="px-3 py-3">Орон сууц</th>
                   <th className="px-3 py-3">Барилга</th>
+                  <th className="px-3 py-3">Нэвтрэлт</th>
                   <th className="px-3 py-3">Эзэмшигч</th>
                   <th className="px-3 py-3">Төлөв</th>
                   <th className="px-3 py-3 text-right">Үйлдэл</th>
@@ -219,7 +231,7 @@ export function ResidentManagement({
               <tbody>
                 {residents.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-3 py-10 text-center text-zinc-500">
+                    <td colSpan={9} className="px-3 py-10 text-center text-zinc-500">
                       Оршин суугч олдсонгүй
                     </td>
                   </tr>
@@ -238,6 +250,13 @@ export function ResidentManagement({
                         {[resident.tower, resident.apartment_number].filter(Boolean).join(" · ")}
                       </td>
                       <td className="px-3 py-3">{resident.building_name}</td>
+                      <td className="px-3 py-3">
+                        {resident.user_id ? (
+                          <span className="text-emerald-700 dark:text-emerald-400">Холбогдсон</span>
+                        ) : (
+                          <span className="text-amber-700 dark:text-amber-400">Холбоогүй</span>
+                        )}
+                      </td>
                       <td className="px-3 py-3">{resident.is_owner ? "Тийм" : "Үгүй"}</td>
                       <td className="px-3 py-3">
                         <StatusBadge

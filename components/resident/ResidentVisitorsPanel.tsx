@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Ban, QrCode } from "lucide-react";
 import type { VisitorPass, PassStatus } from "@/types";
 import {
@@ -62,13 +62,8 @@ export function ResidentVisitorsPanel({
   useActionToast(createState, { successMessage: "Зочны эрх үүслээ" });
   useActionToast(cancelState, { successMessage: "Зочны эрх цуцлагдлаа" });
 
-  const [validFrom, setValidFrom] = useState("");
-  const [validUntil, setValidUntil] = useState("");
-
-  useEffect(() => {
-    setValidFrom(defaultVisitorValidFrom());
-    setValidUntil(defaultVisitorValidUntil());
-  }, []);
+  const [validFrom, setValidFrom] = useState(() => defaultVisitorValidFrom());
+  const [validUntil, setValidUntil] = useState(() => defaultVisitorValidUntil());
 
   const filtered = passes.filter((p) => p.status === activeTab);
 

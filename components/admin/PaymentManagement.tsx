@@ -47,10 +47,16 @@ function PaymentFormDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [state, formAction, pending] = useActionState(recordPaymentAction, initialState);
   const [selectedInvoice, setSelectedInvoice] = useState(openInvoices[0]?.id ?? "");
+  const selected = openInvoices.find((inv) => inv.id === selectedInvoice);
+  const [amount, setAmount] = useState(() => String(openInvoices[0]?.remaining_amount ?? ""));
 
   useEffect(() => {
     dialogRef.current?.showModal();
   }, []);
+
+  useEffect(() => {
+    setAmount(String(selected?.remaining_amount ?? ""));
+  }, [selectedInvoice, selected?.remaining_amount]);
 
   useActionToast(state, {
     onSuccess: () => {
@@ -59,8 +65,6 @@ function PaymentFormDialog({
     },
     successMessage: "Төлбөр амжилттай бүртгэгдлээ",
   });
-
-  const selected = openInvoices.find((inv) => inv.id === selectedInvoice);
 
   return (
     <dialog
@@ -102,8 +106,8 @@ function PaymentFormDialog({
               type="number"
               step="1"
               min="1"
-              defaultValue={selected?.remaining_amount ?? ""}
-              key={selectedInvoice}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
               required
             />
           </div>
