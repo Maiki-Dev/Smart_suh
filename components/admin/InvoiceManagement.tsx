@@ -15,7 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, paymentStatusTone } from "@/components/admin/StatusBadge";
 import { formatMNT, invoiceStatusLabel } from "@/lib/admin/format";
+import { invoiceFeeTypeLabel } from "@/lib/fees/apartment-fees";
 import { notifyActionResult } from "@/lib/hooks/use-action-toast";
+import { PaginationFormFields, TablePagination } from "@/components/admin/TablePagination";
+import {
+  formatBillingMonthMn,
+  formatDateOnlyDateTimeMn,
+  formatDateTimeMn,
+} from "@/lib/format/datetime";
 
 type Filters = {
   q?: string;
@@ -32,11 +39,15 @@ export function InvoiceManagement({
   apartments,
   filters,
   total,
+  page,
+  limit,
 }: {
   invoices: InvoiceAdminRow[];
   apartments: ApartmentAdminRow[];
   filters: Filters;
   total: number;
+  page: number;
+  limit: number;
 }) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -76,6 +87,7 @@ export function InvoiceManagement({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form method="get" className="grid gap-3 lg:grid-cols-6">
+            <PaginationFormFields page={page} limit={limit} />
             <Input name="q" placeholder="Хайлт..." defaultValue={filters.q ?? ""} className="lg:col-span-2" />
             <select
               name="status"
@@ -125,7 +137,8 @@ export function InvoiceManagement({
                 <tr>
                   <th className="px-3 py-3">Дугаар</th>
                   <th className="px-3 py-3">Орон сууц</th>
-                  <th className="px-3 py-3">Сар</th>
+                  <th className="px-3 py-3">Огноо</th>
+                  <th className="px-3 py-3">Төрөл</th>
                   <th className="px-3 py-3">Дүн</th>
                   <th className="px-3 py-3">Төлсөн</th>
                   <th className="px-3 py-3">Үлдэгдэл</th>
@@ -137,7 +150,7 @@ export function InvoiceManagement({
               <tbody>
                 {invoices.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-3 py-10 text-center text-zinc-500">
+                    <td colSpan={10} className="px-3 py-10 text-center text-zinc-500">
                       Нэхэмжлэл олдсонгүй
                     </td>
                   </tr>
@@ -148,9 +161,18 @@ export function InvoiceManagement({
                       <td className="px-3 py-3">
                         {[inv.building_name, inv.tower, inv.apartment_number].filter(Boolean).join(" · ")}
                       </td>
-                      <td className="px-3 py-3 tabular-nums">
-                        {inv.billing_year}/{String(inv.billing_month).padStart(2, "0")}
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <div className="flex flex-col gap-0.5 tabular-nums">
+                          <span>{formatBillingMonthMn(inv.billing_year, inv.billing_month)}</span>
+                          <span className="text-xs text-zinc-500">{formatDateTimeMn(inv.created_at)}</span>
+                          {inv.due_date ? (
+                            <span className="text-xs text-zinc-500">
+                              Төлөх: {formatDateOnlyDateTimeMn(inv.due_date)}
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
+                      <td className="px-3 py-3">{invoiceFeeTypeLabel(inv.fee_type)}</td>
                       <td className="px-3 py-3 tabular-nums">{formatMNT(inv.amount)}</td>
                       <td className="px-3 py-3 tabular-nums">{formatMNT(inv.paid_amount)}</td>
                       <td className="px-3 py-3 tabular-nums">{formatMNT(inv.remaining_amount)}</td>
@@ -187,6 +209,7 @@ export function InvoiceManagement({
               </tbody>
             </table>
           </div>
+          <TablePagination total={total} page={page} limit={limit} />
         </CardContent>
       </Card>
     </div>

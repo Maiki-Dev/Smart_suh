@@ -114,15 +114,15 @@ export function gateActionLabel(action: string): string {
 export function maintenanceStatusLabel(status: string): string {
   switch (status) {
     case 'OPEN':
-      return 'Нээлттэй';
+      return 'Шинэ';
     case 'IN_PROGRESS':
       return 'Явцад';
     case 'ON_HOLD':
       return 'Түр зогссон';
     case 'COMPLETED':
-      return 'Дууссан';
+      return 'Шийдсэн';
     case 'CANCELLED':
-      return 'Цуцлагдсан';
+      return 'Хаагдсан';
     default:
       return status;
   }
@@ -163,7 +163,7 @@ export function maintenanceCategoryLabel(category: string): string {
 }
 
 export const MAINTENANCE_CATEGORY_OPTIONS = [
-  { value: 'STRUCTURAL', label: 'Лифт' },
+  { value: 'STRUCTURAL', label: 'Лифт / Бүтэц' },
   { value: 'PLUMBING', label: 'Ус, канал' },
   { value: 'ELECTRICAL', label: 'Цахилгаан' },
   { value: 'CLEANING', label: 'Цэвэрлэгээ' },
@@ -212,7 +212,7 @@ export function notificationTypeLabel(type: string): string {
     case 'ANNOUNCEMENT':
       return 'Зарлал';
     case 'GATE':
-      return 'Гацаа';
+      return 'Зогсоол';
     case 'SYSTEM':
       return 'Систем';
     default:
@@ -242,7 +242,7 @@ export function activityKindLabel(kind: string): string {
     case 'maintenance':
       return 'Засвар';
     case 'gate':
-      return 'Гацаа';
+      return 'Зогсоол';
     case 'invoice':
       return 'Нэхэмжлэл';
     default:

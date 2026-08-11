@@ -23,6 +23,7 @@ import {
   erpDialogHeaderClassName,
 } from "@/components/ui/erp-dialog";
 import { notifyActionResult, useActionToast } from "@/lib/hooks/use-action-toast";
+import { TablePagination } from "@/components/admin/TablePagination";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { formatDateMn, isPastInTimeZone } from "@/lib/format/datetime";
 
@@ -134,9 +135,13 @@ function AnnouncementFormDialog({
 export function AnnouncementManagement({
   announcements,
   total,
+  page,
+  limit,
 }: {
   announcements: Announcement[];
   total: number;
+  page: number;
+  limit: number;
 }) {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -305,6 +310,7 @@ export function AnnouncementManagement({
               </tbody>
             </table>
           </div>
+          <TablePagination total={total} page={page} limit={limit} />
         </CardContent>
       </Card>
 

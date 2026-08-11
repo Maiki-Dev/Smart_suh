@@ -4,8 +4,15 @@ import { AdminShell } from '@/components/layout/AdminShell';
 import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { AnnouncementManagement } from '@/components/admin/AnnouncementManagement';
 import { listAnnouncementsByOrganization } from '@/lib/queries/announcements';
+import { parseTablePagination } from '@/lib/admin/pagination';
 
-export default async function AdminAnnouncementsPage() {
+export default async function AdminAnnouncementsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; limit?: string }>;
+}) {
+  const params = await searchParams;
+  const { page, limit, offset } = parseTablePagination(params);
   const ctx = await requireAdminRole();
   const orgScope = getScopedOrganizationId(ctx);
   const orgId = orgScope ?? ctx.user.organization_id;
@@ -13,7 +20,8 @@ export default async function AdminAnnouncementsPage() {
   const announcementsRes = await listAnnouncementsByOrganization(orgId, {
     only_published: false,
     include_expired: true,
-    limit: 200,
+    limit,
+    offset,
   });
 
   return (
@@ -28,6 +36,8 @@ export default async function AdminAnnouncementsPage() {
         <AnnouncementManagement
           announcements={announcementsRes.data}
           total={announcementsRes.total}
+          page={page}
+          limit={limit}
         />
       </AdminShell>
     </>

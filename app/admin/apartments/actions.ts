@@ -17,6 +17,7 @@ import {
   getApartmentDeleteBlockers,
   updateApartment,
 } from '@/lib/queries/apartments';
+import { sumFeeBreakdown } from '@/lib/fees/apartment-fees';
 import type { ApartmentStatus } from '@/types';
 
 export type ApartmentActionState = {
@@ -30,6 +31,11 @@ const emptyToNull = (value: unknown) => {
   return value;
 };
 
+const feeField = z.preprocess(
+  (value) => Number(value ?? 0),
+  z.number().min(0, 'Төлбөр сөрөг байж болохгүй'),
+);
+
 const apartmentSchema = z.object({
   building_name: z.string().trim().min(1, 'Барилга оруулна уу').max(255),
   tower: z.preprocess(emptyToNull, z.string().max(50).nullable().optional()),
@@ -39,10 +45,10 @@ const apartmentSchema = z.object({
     z.number().int().nullable().optional(),
   ),
   apartment_number: z.string().trim().min(1, 'Орон сууцны дугаар оруулна уу').max(50),
-  monthly_fee: z.preprocess(
-    (value) => Number(value ?? 0),
-    z.number().min(0, 'Сарын төлбөр сөрөг байж болохгүй'),
-  ),
+  apartment_fee: feeField,
+  parking_fee: feeField,
+  water_fee: feeField,
+  electricity_fee: feeField,
 });
 
 function formToObject(formData: FormData): Record<string, FormDataEntryValue> {
@@ -88,7 +94,11 @@ export async function createApartmentAction(
       floor: parsed.data.floor ?? null,
       apartment_number: parsed.data.apartment_number,
       area_m2: null,
-      monthly_fee: parsed.data.monthly_fee,
+      apartment_fee: parsed.data.apartment_fee,
+      parking_fee: parsed.data.parking_fee,
+      water_fee: parsed.data.water_fee,
+      electricity_fee: parsed.data.electricity_fee,
+      monthly_fee: sumFeeBreakdown(parsed.data),
       status: 'OCCUPIED',
     });
 
@@ -140,7 +150,11 @@ export async function updateApartmentAction(
       entrance: parsed.data.entrance ?? null,
       floor: parsed.data.floor ?? null,
       apartment_number: parsed.data.apartment_number,
-      monthly_fee: parsed.data.monthly_fee,
+      apartment_fee: parsed.data.apartment_fee,
+      parking_fee: parsed.data.parking_fee,
+      water_fee: parsed.data.water_fee,
+      electricity_fee: parsed.data.electricity_fee,
+      monthly_fee: sumFeeBreakdown(parsed.data),
     });
 
     revalidatePath('/admin/apartments');

@@ -57,7 +57,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     label: 'Зогсоол',
     items: [
       { label: 'Машин', href: '/admin/vehicles', icon: Car, segment: 'vehicles' },
-      { label: 'Нэвтрэлт', href: '/admin/gate-access', icon: Waypoints, segment: 'gate-access' },
+      { label: 'Зогсоолын эрх', href: '/admin/gate-access', icon: Waypoints, segment: 'gate-access' },
       { label: 'Зочин', href: '/admin/visitors', icon: UserPlus, segment: 'visitors' },
     ],
   },

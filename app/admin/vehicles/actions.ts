@@ -7,6 +7,7 @@ import {
   assertOrganizationAccess,
   resolveOrganizationIdForCreate,
 } from '@/lib/admin/org-scope';
+import { generateUniqueRfidNumber } from '@/lib/gate/generate-rfid';
 import { recalculateVehicleAccess } from '@/lib/gate/vehicle-access-service';
 import { getApartmentById } from '@/lib/queries/apartments';
 import {
@@ -14,6 +15,7 @@ import {
   getDefaultVehicleForApartment,
   getVehicleById,
   getVehicleByPlate,
+  getVehicleByRfid,
   updateVehicle,
 } from '@/lib/queries/vehicles';
 import type { VehicleType } from '@/types';
@@ -84,13 +86,23 @@ export async function createVehicleAction(
   }
 
   try {
+    const rfidNumber =
+      parsed.data.rfid_number?.trim() || (await generateUniqueRfidNumber(organizationId));
+
+    if (parsed.data.rfid_number?.trim()) {
+      const duplicateRfid = await getVehicleByRfid(organizationId, rfidNumber);
+      if (duplicateRfid) {
+        return { status: 'error', message: 'Энэ RFID дугаар аль хэдийн бүртгэгдсэн байна' };
+      }
+    }
+
     await createVehicle({
       organization_id: organizationId,
       apartment_id: parsed.data.apartment_id,
       plate_number: parsed.data.plate_number,
       vehicle_type: parsed.data.vehicle_type as VehicleType,
       owner_name: parsed.data.owner_name ?? null,
-      rfid_number: parsed.data.rfid_number ?? null,
+      rfid_number: rfidNumber,
       active: true,
       gate_access: true,
       access_started_at: new Date().toISOString(),
@@ -102,7 +114,10 @@ export async function createVehicleAction(
     });
 
     revalidateVehiclePaths(parsed.data.apartment_id);
-    return { status: 'success', message: 'Машин амжилттай бүртгэгдлээ' };
+    return {
+      status: 'success',
+      message: `Машин амжилттай бүртгэгдлээ (RFID: ${rfidNumber})`,
+    };
   } catch (error) {
     return {
       status: 'error',
@@ -140,11 +155,16 @@ export async function updateVehicleAction(
   }
 
   try {
+    const rfidNumber =
+      parsed.data.rfid_number?.trim() ||
+      existing.rfid_number ||
+      (await generateUniqueRfidNumber(existing.organization_id));
+
     await updateVehicle(id, {
       plate_number: parsed.data.plate_number,
       vehicle_type: parsed.data.vehicle_type as VehicleType,
       owner_name: parsed.data.owner_name ?? null,
-      rfid_number: parsed.data.rfid_number ?? null,
+      rfid_number: rfidNumber,
     });
 
     revalidateVehiclePaths(existing.apartment_id);

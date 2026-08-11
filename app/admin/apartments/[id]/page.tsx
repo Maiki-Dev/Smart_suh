@@ -22,6 +22,12 @@ import {
   paymentStatusLabel,
   residentStatusLabel,
 } from '@/lib/admin/format';
+import { feeBreakdownLabel, invoiceFeeTypeLabel } from '@/lib/fees/apartment-fees';
+import {
+  formatBillingMonthMn,
+  formatDateOnlyDateTimeMn,
+  formatDateTimeMn,
+} from '@/lib/format/datetime';
 import { getApartmentDetailBundle, getApartmentDeleteBlockers } from '@/lib/queries/apartments';
 import { listResidentsByApartment } from '@/lib/queries/residents';
 import { listInvoicesByApartment } from '@/lib/queries/invoices';
@@ -83,7 +89,11 @@ export default async function AdminApartmentDetailPage({
               <Info label="Орц" value={apt.entrance ?? '—'} />
               <Info label="Давхар" value={apt.floor?.toString() ?? '—'} />
               <Info label="Тоот" value={apt.apartment_number} />
-              <Info label="Сарын төлбөр" value={formatMNT(apt.monthly_fee)} />
+              <Info label="Нийт сарын төлбөр" value={formatMNT(apt.monthly_fee)} />
+              <Info label={feeBreakdownLabel('apartment_fee')} value={formatMNT(apt.apartment_fee)} />
+              <Info label={feeBreakdownLabel('parking_fee')} value={formatMNT(apt.parking_fee)} />
+              <Info label={feeBreakdownLabel('water_fee')} value={formatMNT(apt.water_fee)} />
+              <Info label={feeBreakdownLabel('electricity_fee')} value={formatMNT(apt.electricity_fee)} />
               <Info
                 label="Эзэмшигч"
                 value={
@@ -185,12 +195,17 @@ export default async function AdminApartmentDetailPage({
                     <div>
                       <div className="font-medium">{invoice.invoice_number}</div>
                       <div className="text-xs text-zinc-500">
-                        {invoice.billing_year}/{invoice.billing_month} · {invoiceStatusLabel(invoice.status)}
+                        {formatBillingMonthMn(invoice.billing_year, invoice.billing_month)} ·{' '}
+                        {formatDateTimeMn(invoice.created_at)}
+                        {invoice.due_date
+                          ? ` · Төлөх: ${formatDateOnlyDateTimeMn(invoice.due_date)}`
+                          : ''}{' '}
+                        · {invoiceFeeTypeLabel(invoice.fee_type)} · {invoiceStatusLabel(invoice.status)}
                       </div>
                     </div>
                     <div className="text-right tabular-nums">
                       <div>{formatMNT(invoice.amount)}</div>
-                      <div className="text-xs text-zinc-500">
+                      <div className="text-xs text-zinc-500 mt-1">
                         Үлдэгдэл {formatMNT(invoice.remaining_amount)}
                       </div>
                     </div>
@@ -213,8 +228,8 @@ export default async function AdminApartmentDetailPage({
                         {paymentMethodLabel(payment.payment_method)} · {paymentRecordStatusLabel(payment.status)}
                       </div>
                     </div>
-                    <div className="text-xs text-zinc-500">
-                      {new Date(payment.paid_at).toLocaleDateString('mn-MN')}
+                    <div className="text-xs text-zinc-500 tabular-nums">
+                      {formatDateTimeMn(payment.paid_at)}
                     </div>
                   </div>
                 ))}

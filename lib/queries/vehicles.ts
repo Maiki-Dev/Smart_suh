@@ -31,6 +31,19 @@ export async function getVehicleByPlate(
   return rows[0] ?? null;
 }
 
+export async function getVehicleByRfid(
+  organizationId: string,
+  rfidNumber: string,
+  client?: DbClient,
+): Promise<Vehicle | null> {
+  const { rows } = await query<Vehicle>(
+    `${SELECT_SQL} WHERE organization_id = $1 AND UPPER(rfid_number) = UPPER($2)`,
+    [organizationId, rfidNumber],
+    client,
+  );
+  return rows[0] ?? null;
+}
+
 export async function listVehiclesByApartment(
   apartmentId: string,
   opts: PaginationOptions = {},

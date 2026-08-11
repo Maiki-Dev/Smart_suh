@@ -4,34 +4,41 @@ import 'dotenv/config';
 import {
   assertDatabaseUrl,
   getPgPoolConfig,
+  getSupabaseConnectionHint,
 } from '@/lib/db-config';
 
 type DbClient = Pool | PoolClient;
 
-let globalPool: Pool | undefined;
+const globalForDb = globalThis as unknown as {
+  pgPool?: Pool;
+};
 
 function createPool(): Pool {
   const databaseUrl = assertDatabaseUrl();
-  return new Pool(getPgPoolConfig(databaseUrl));
+  const pool = new Pool(getPgPoolConfig(databaseUrl));
+  pool.on('error', (err) => {
+    console.error('Unexpected error on idle PostgreSQL pool', err);
+  });
+  return pool;
 }
 
 function getPool(): Pool {
-  if (!globalPool) {
-    globalPool = createPool();
-    globalPool.on('error', (err) => {
-      console.error('Unexpected error on idle PostgreSQL pool', err);
-    });
+  if (!globalForDb.pgPool) {
+    globalForDb.pgPool = createPool();
   }
-  return globalPool;
+  return globalForDb.pgPool;
 }
 
-let lazyPool: Pool | undefined;
-
 function pool(): Pool {
-  if (!lazyPool) {
-    lazyPool = getPool();
+  return getPool();
+}
+
+function wrapQueryError(error: unknown): never {
+  const hint = getSupabaseConnectionHint(error);
+  if (hint && error instanceof Error) {
+    throw new Error(`${error.message}\n\n${hint}`);
   }
-  return lazyPool;
+  throw error;
 }
 
 export async function query<T extends QueryResultRow = QueryResultRow>(
@@ -39,17 +46,25 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
   params?: unknown[],
   client: DbClient = pool(),
 ): Promise<QueryResult<T>> {
-  return client.query(text, params) as Promise<QueryResult<T>>;
+  try {
+    return (await client.query(text, params)) as QueryResult<T>;
+  } catch (error) {
+    wrapQueryError(error);
+  }
 }
 
 export async function getClient(): Promise<PoolClient> {
-  return pool().connect();
+  try {
+    return await pool().connect();
+  } catch (error) {
+    wrapQueryError(error);
+  }
 }
 
 export async function withTransaction<T>(
   fn: (client: PoolClient) => Promise<T>,
 ): Promise<T> {
-  const client = await pool().connect();
+  const client = await getClient();
   try {
     await client.query('BEGIN');
     const result = await fn(client);
@@ -64,10 +79,9 @@ export async function withTransaction<T>(
 }
 
 export async function endPool(): Promise<void> {
-  if (globalPool) {
-    await globalPool.end();
-    globalPool = undefined;
-    lazyPool = undefined;
+  if (globalForDb.pgPool) {
+    await globalForDb.pgPool.end();
+    globalForDb.pgPool = undefined;
   }
 }
 

@@ -15,6 +15,10 @@ export interface ApartmentAdminRow {
   apartment_number: string;
   area_m2: number | null;
   monthly_fee: number;
+  apartment_fee: number;
+  parking_fee: number;
+  water_fee: number;
+  electricity_fee: number;
   status: ApartmentStatus;
   owner_id: string | null;
   owner_name: string | null;
@@ -36,7 +40,9 @@ export interface ApartmentDetailBundle {
 
 const SELECT_SQL = `
   SELECT id, organization_id, building_id, tower, entrance, floor,
-         apartment_number, area_m2, monthly_fee, status, created_at, updated_at
+         apartment_number, area_m2, monthly_fee,
+         apartment_fee, parking_fee, water_fee, electricity_fee,
+         status, created_at, updated_at
     FROM apartments
 `;
 
@@ -126,6 +132,10 @@ const ADMIN_LIST_SQL = `
     a.apartment_number,
     a.area_m2,
     a.monthly_fee,
+    a.apartment_fee,
+    a.parking_fee,
+    a.water_fee,
+    a.electricity_fee,
     a.status,
     owner.id AS owner_id,
     NULLIF(TRIM(CONCAT(owner.first_name, ' ', owner.last_name)), '') AS owner_name,
@@ -308,6 +318,10 @@ export async function createApartment(input: {
   floor?: number | null;
   area_m2?: number | null;
   monthly_fee?: number;
+  apartment_fee?: number;
+  parking_fee?: number;
+  water_fee?: number;
+  electricity_fee?: number;
   status?: ApartmentStatus;
   client?: DbClient;
 }): Promise<Apartment> {
@@ -319,7 +333,11 @@ export async function createApartment(input: {
     entrance = null,
     floor = null,
     area_m2 = null,
-    monthly_fee = 0,
+    apartment_fee = 0,
+    parking_fee = 0,
+    water_fee = 0,
+    electricity_fee = 0,
+    monthly_fee = apartment_fee + parking_fee + water_fee + electricity_fee,
     status = 'OCCUPIED',
     client,
   } = input;
@@ -328,12 +346,29 @@ export async function createApartment(input: {
     `
       INSERT INTO apartments
         (organization_id, building_id, tower, entrance, floor,
-         apartment_number, area_m2, monthly_fee, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::apt_status)
+         apartment_number, area_m2, monthly_fee,
+         apartment_fee, parking_fee, water_fee, electricity_fee, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::apt_status)
       RETURNING id, organization_id, building_id, tower, entrance, floor,
-                apartment_number, area_m2, monthly_fee, status, created_at, updated_at
+                apartment_number, area_m2, monthly_fee,
+                apartment_fee, parking_fee, water_fee, electricity_fee,
+                status, created_at, updated_at
     `,
-    [organization_id, building_id, tower, entrance, floor, apartment_number, area_m2, monthly_fee, status],
+    [
+      organization_id,
+      building_id,
+      tower,
+      entrance,
+      floor,
+      apartment_number,
+      area_m2,
+      monthly_fee,
+      apartment_fee,
+      parking_fee,
+      water_fee,
+      electricity_fee,
+      status,
+    ],
     client,
   );
   return rows[0];
@@ -353,7 +388,21 @@ export async function updateApartment(
     floor: input.floor ?? existing.floor,
     apartment_number: input.apartment_number ?? existing.apartment_number,
     area_m2: input.area_m2 ?? existing.area_m2,
-    monthly_fee: input.monthly_fee ?? existing.monthly_fee,
+    apartment_fee: input.apartment_fee ?? existing.apartment_fee,
+    parking_fee: input.parking_fee ?? existing.parking_fee,
+    water_fee: input.water_fee ?? existing.water_fee,
+    electricity_fee: input.electricity_fee ?? existing.electricity_fee,
+    monthly_fee:
+      input.monthly_fee ??
+      (input.apartment_fee !== undefined ||
+      input.parking_fee !== undefined ||
+      input.water_fee !== undefined ||
+      input.electricity_fee !== undefined
+        ? (input.apartment_fee ?? existing.apartment_fee) +
+          (input.parking_fee ?? existing.parking_fee) +
+          (input.water_fee ?? existing.water_fee) +
+          (input.electricity_fee ?? existing.electricity_fee)
+        : existing.monthly_fee),
     status: input.status ?? existing.status,
   };
 
@@ -361,10 +410,14 @@ export async function updateApartment(
     `
       UPDATE apartments
          SET building_id = $1, tower = $2, entrance = $3, floor = $4, apartment_number = $5,
-             area_m2 = $6, monthly_fee = $7, status = $8::apt_status
-       WHERE id = $9
+             area_m2 = $6, monthly_fee = $7,
+             apartment_fee = $8, parking_fee = $9, water_fee = $10, electricity_fee = $11,
+             status = $12::apt_status
+       WHERE id = $13
        RETURNING id, organization_id, building_id, tower, entrance, floor,
-                 apartment_number, area_m2, monthly_fee, status, created_at, updated_at
+                 apartment_number, area_m2, monthly_fee,
+                 apartment_fee, parking_fee, water_fee, electricity_fee,
+                 status, created_at, updated_at
     `,
     [
       merged.building_id,
@@ -374,6 +427,10 @@ export async function updateApartment(
       merged.apartment_number,
       merged.area_m2,
       merged.monthly_fee,
+      merged.apartment_fee,
+      merged.parking_fee,
+      merged.water_fee,
+      merged.electricity_fee,
       merged.status,
       id,
     ],

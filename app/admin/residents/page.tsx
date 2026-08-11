@@ -5,14 +5,16 @@ import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { ResidentManagement } from '@/components/admin/ResidentManagement';
 import { listApartmentsAdminView } from '@/lib/queries/apartments';
 import { listResidentsAdminView } from '@/lib/queries/residents';
+import { parseTablePagination } from '@/lib/admin/pagination';
 import type { ResidentStatus } from '@/types';
 
 export default async function AdminResidentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; apartment?: string; new?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; apartment?: string; new?: string; page?: string; limit?: string }>;
 }) {
   const params = await searchParams;
+  const { page, limit, offset } = parseTablePagination(params);
   const ctx = await requireAdminRole();
   const orgScope = getScopedOrganizationId(ctx);
 
@@ -20,7 +22,8 @@ export default async function AdminResidentsPage({
     listResidentsAdminView(orgScope, {
       search: params.q,
       status: (params.status as ResidentStatus | undefined) || undefined,
-      limit: 200,
+      limit,
+      offset,
     }),
     listApartmentsAdminView(orgScope, { limit: 500 }),
   ]);
@@ -42,6 +45,8 @@ export default async function AdminResidentsPage({
             status: params.status,
           }}
           total={residentsRes.total}
+          page={page}
+          limit={limit}
           defaultApartmentId={params.apartment || undefined}
           openCreateOnMount={params.new === '1'}
         />

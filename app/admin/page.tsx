@@ -29,6 +29,7 @@ import {
 import { listAnnouncementsByOrganization } from '@/lib/queries/announcements';
 import { listMaintenanceRequestsByOrganization } from '@/lib/queries/maintenance';
 import type { Announcement, MaintenanceRequest } from '@/types';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
   activityKindLabel,
@@ -191,7 +192,7 @@ export default async function AdminPage() {
         ctx={ctx}
         activeSegment=""
         pageTitle="Хянах самбар"
-        pageSubtitle={`${ctx.user.organization?.name ?? 'Байгууллага'} — нийт хөрөнгийн тойм`}
+        pageSubtitle={`${ctx.user.organization?.name ?? 'Байгууллага'} — Бүх мэдээлэл`}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-4 mb-8">
           {metrics.slice(0, 4).map((m) => (
@@ -210,7 +211,7 @@ export default async function AdminPage() {
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div>
                   <CardTitle className="text-base font-semibold">Сүүлийн үйлдэл</CardTitle>
-                  <CardDescription className="text-sm">Төлбөр, засвар, гатаа, нэхэмжлэл — ганц цуваанаар.</CardDescription>
+                  <CardDescription className="text-sm">Төлбөр, засвар, зогсоол, нэхэмжлэл — ганц цуваанаар.</CardDescription>
                 </div>
                 <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
                   Сүүлийн 8 бичлэг
@@ -435,7 +436,14 @@ function MaintenanceList({ data }: { data: MaintenanceRequest[] }) {
   return (
     <div className="flex flex-col">
       {data.map((row, idx) => (
-        <div key={row.id} className={cn('py-3 flex items-start gap-3', idx !== data.length - 1 ? 'border-b border-zinc-100 dark:border-zinc-800' : '')}>
+        <Link
+          key={row.id}
+          href={`/admin/maintenance/${row.id}`}
+          className={cn(
+            'py-3 flex items-start gap-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/40 -mx-2 px-2 rounded-lg',
+            idx !== data.length - 1 ? 'border-b border-zinc-100 dark:border-zinc-800' : '',
+          )}
+        >
           <StatusDot status={row.status} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -454,7 +462,7 @@ function MaintenanceList({ data }: { data: MaintenanceRequest[] }) {
           <span className="text-[11px] text-zinc-400 whitespace-nowrap tabular-nums shrink-0">
             {relativeTime(row.created_at)}
           </span>
-        </div>
+        </Link>
       ))}
     </div>
   );

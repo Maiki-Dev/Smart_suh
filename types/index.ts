@@ -14,6 +14,8 @@ export type InvoiceStatus =
   | 'OVERDUE'
   | 'CANCELLED';
 
+export type InvoiceFeeType = 'APARTMENT' | 'PARKING' | 'WATER' | 'ELECTRICITY';
+
 export type PaymentMethod =
   | 'CASH'
   | 'BANK_TRANSFER'
@@ -99,6 +101,10 @@ export interface Apartment {
   apartment_number: string;
   area_m2: number | null;
   monthly_fee: number;
+  apartment_fee: number;
+  parking_fee: number;
+  water_fee: number;
+  electricity_fee: number;
   status: ApartmentStatus;
   created_at: Timestamp;
   updated_at: Timestamp;
@@ -126,6 +132,7 @@ export interface Invoice {
   invoice_number: string;
   billing_year: number;
   billing_month: number;
+  fee_type: InvoiceFeeType;
   amount: number;
   paid_amount: number;
   remaining_amount: number;
@@ -211,6 +218,7 @@ export interface MaintenanceRequest {
   organization_id: UUID;
   apartment_id: UUID;
   created_by: UUID | null;
+  assigned_to: UUID | null;
   title: string;
   description: string | null;
   category: MaintenanceCategory;

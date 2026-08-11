@@ -11,6 +11,7 @@ import {
   getMaintenanceRequestById,
   updateMaintenanceRequest,
 } from '@/lib/queries/maintenance';
+import { notifyMaintenanceStaff } from '@/lib/maintenance/maintenance-service';
 import type { MaintenanceCategory, MaintenancePriority } from '@/types';
 
 export type ResidentMaintenanceActionState = {
@@ -37,6 +38,13 @@ const commentSchema = z.object({
 const closeSchema = z.object({
   request_id: z.string().uuid(),
 });
+
+function revalidateResidentMaintenance() {
+  revalidatePath('/resident/maintenance');
+  revalidatePath('/resident');
+  revalidatePath('/admin/maintenance');
+  revalidatePath('/admin');
+}
 
 export async function createMaintenanceRequestAction(
   _prev: ResidentMaintenanceActionState,
@@ -81,8 +89,13 @@ export async function createMaintenanceRequestAction(
       },
     });
 
-    revalidatePath('/resident/maintenance');
-    revalidatePath('/resident');
+    await notifyMaintenanceStaff(
+      ctx.user.organization_id,
+      'Шинэ засварын хүсэлт',
+      `${ctx.user.last_name} ${ctx.user.first_name}: "${request.title}"`,
+    );
+
+    revalidateResidentMaintenance();
     return { status: 'success', message: 'Засварын хүсэлт бүртгэгдлээ' };
   } catch (error) {
     return {
@@ -118,7 +131,14 @@ export async function addCommentAction(
       comment: parsed.data.comment,
     });
 
-    revalidatePath('/resident/maintenance');
+    await notifyMaintenanceStaff(
+      request.organization_id,
+      'Оршин суугчийн тайлбар',
+      `"${request.title}" хүсэлтэд оршин суугч тайлбар нэмлээ.`,
+    );
+
+    revalidateResidentMaintenance();
+    revalidatePath(`/admin/maintenance/${request.id}`);
     return { status: 'success', message: 'Сэтгэгдэл нэмэгдлээ' };
   } catch (error) {
     return {
@@ -163,8 +183,14 @@ export async function closeMaintenanceAction(
       new_data: { status: 'CANCELLED', closed_by: 'resident' },
     });
 
-    revalidatePath('/resident/maintenance');
-    revalidatePath('/resident');
+    await notifyMaintenanceStaff(
+      request.organization_id,
+      'Засварын хүсэлт цуцлагдлаа',
+      `${ctx.user.last_name} ${ctx.user.first_name} "${request.title}" хүсэлтийг цуцаллаа.`,
+    );
+
+    revalidateResidentMaintenance();
+    revalidatePath(`/admin/maintenance/${request.id}`);
     return { status: 'success', message: 'Хүсэлт хаагдлаа' };
   } catch (error) {
     return {

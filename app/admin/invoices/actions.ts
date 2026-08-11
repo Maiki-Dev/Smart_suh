@@ -8,6 +8,7 @@ import {
   generateMonthlyInvoices,
   getInvoiceById,
 } from '@/lib/queries/invoices';
+import { formatBillingMonthMn } from '@/lib/format/datetime';
 
 export type InvoiceActionState = {
   status: 'idle' | 'success' | 'error';
@@ -46,11 +47,13 @@ export async function generateMonthlyInvoicesAction(): Promise<InvoiceActionStat
       organizationId: orgScope ?? ctx.user.organization_id,
     });
     const summary = results
-      .map(
-        (r) =>
-          `${r.billing_year}/${r.billing_month}: ${r.created} үүссэн, ${r.skipped} алгассан` +
-          (r.errors.length ? `, ${r.errors.length} алдаа` : ''),
-      )
+      .map((r) => {
+        const parts = [`${formatBillingMonthMn(r.billing_year, r.billing_month)}: ${r.created} шинэ`];
+        if (r.skipped > 0) parts.push(`${r.skipped} аль хэдийн байсан`);
+        if (r.zero_fee > 0) parts.push(`${r.zero_fee} төлбөр 0₮`);
+        if (r.errors.length > 0) parts.push(`${r.errors.length} алдаа`);
+        return parts.join(', ');
+      })
       .join('; ');
 
     revalidatePath('/admin/invoices');

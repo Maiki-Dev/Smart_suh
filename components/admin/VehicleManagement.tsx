@@ -25,6 +25,7 @@ import {
   erpSelectClassName,
 } from "@/components/ui/erp-dialog";
 import { notifyActionResult, useActionToast } from "@/lib/hooks/use-action-toast";
+import { PaginationFormFields, TablePagination } from "@/components/admin/TablePagination";
 import { StatusBadge, gateAccessTone } from "@/components/admin/StatusBadge";
 import {
   gateAccessStatusLabel,
@@ -125,10 +126,25 @@ function VehicleFormDialog({
             <Label htmlFor="owner_name">Эзэмшигч</Label>
             <Input id="owner_name" name="owner_name" defaultValue={vehicle?.owner_name ?? ""} />
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="rfid_number">RFID</Label>
-            <Input id="rfid_number" name="rfid_number" defaultValue={vehicle?.rfid_number ?? ""} />
-          </div>
+          {vehicle ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="rfid_number">RFID</Label>
+              <Input
+                id="rfid_number"
+                name="rfid_number"
+                defaultValue={vehicle.rfid_number ?? ""}
+                readOnly
+                className="bg-zinc-50 dark:bg-zinc-900/60"
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Label>RFID</Label>
+              <p className="rounded-lg border border-dashed border-zinc-200 px-3 py-2 text-sm text-zinc-500 dark:border-zinc-700">
+                Автоматаар үүснэ (жишээ: RFID-ABC-1002)
+              </p>
+            </div>
+          )}
         </div>
         <div className={erpDialogFooterClassName}>
           <Button type="button" variant="outline" onClick={onClose}>
@@ -148,11 +164,15 @@ export function VehicleManagement({
   apartments,
   filters,
   total,
+  page,
+  limit,
 }: {
   vehicles: VehicleAdminRow[];
   apartments: ApartmentAdminRow[];
   filters: Filters;
   total: number;
+  page: number;
+  limit: number;
 }) {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -188,6 +208,7 @@ export function VehicleManagement({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form method="get" className="grid gap-3 lg:grid-cols-5">
+            <PaginationFormFields page={page} limit={limit} />
             <Input name="q" placeholder="Хайлт..." defaultValue={filters.q ?? ""} className="lg:col-span-2" />
             <select
               name="active"
@@ -309,6 +330,7 @@ export function VehicleManagement({
               </tbody>
             </table>
           </div>
+          <TablePagination total={total} page={page} limit={limit} />
         </CardContent>
       </Card>
 

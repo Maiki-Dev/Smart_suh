@@ -74,7 +74,7 @@ export async function recalculateVehicleAccess(
   }
 
   const invoicesRes = await listInvoicesByApartment(apartmentId, { limit: 120 }, client);
-  const consecutiveUnpaidMonths = countConsecutiveUnpaidMonths(invoicesRes.data);
+  const consecutiveUnpaidMonths = countConsecutiveUnpaidMonths(invoicesRes.data, 'PARKING');
   const shouldDisable = shouldDisableGateAccess(consecutiveUnpaidMonths);
   const nextGateAccess = !shouldDisable;
   const previousGateAccess = vehicle.gate_access;
@@ -183,7 +183,7 @@ export async function getVehicleAccessSummary(
 }> {
   const vehicle = await getDefaultVehicleForApartment(apartmentId, client);
   const invoicesRes = await listInvoicesByApartment(apartmentId, { limit: 120 }, client);
-  const consecutiveUnpaidMonths = countConsecutiveUnpaidMonths(invoicesRes.data);
+  const consecutiveUnpaidMonths = countConsecutiveUnpaidMonths(invoicesRes.data, 'PARKING');
 
   return {
     vehicle,

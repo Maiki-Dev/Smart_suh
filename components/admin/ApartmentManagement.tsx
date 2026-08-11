@@ -25,6 +25,7 @@ import {
   erpSelectClassName,
 } from "@/components/ui/erp-dialog";
 import { notifyActionResult, useActionToast } from "@/lib/hooks/use-action-toast";
+import { PaginationFormFields, TablePagination } from "@/components/admin/TablePagination";
 import {
   StatusBadge,
   apartmentStatusTone,
@@ -36,6 +37,7 @@ import {
   paymentStatusLabel,
   vehicleStatusLabel,
 } from "@/lib/admin/format";
+import { feeBreakdownLabel } from "@/lib/fees/apartment-fees";
 
 const initialState: ApartmentActionState = { status: "idle" };
 
@@ -120,14 +122,47 @@ function ApartmentFormDialog({
               <p className="text-xs text-destructive">{state.fieldErrors.apartment_number[0]}</p>
             ) : null}
           </div>
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="monthly_fee">Сарын төлбөр</Label>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="apartment_fee">{feeBreakdownLabel("apartment_fee")}</Label>
             <Input
-              id="monthly_fee"
-              name="monthly_fee"
+              id="apartment_fee"
+              name="apartment_fee"
               type="number"
               step="1"
-              defaultValue={apartment?.monthly_fee ?? 0}
+              defaultValue={apartment?.apartment_fee ?? apartment?.monthly_fee ?? 0}
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="parking_fee">{feeBreakdownLabel("parking_fee")}</Label>
+            <Input
+              id="parking_fee"
+              name="parking_fee"
+              type="number"
+              step="1"
+              defaultValue={apartment?.parking_fee ?? 0}
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="water_fee">{feeBreakdownLabel("water_fee")}</Label>
+            <Input
+              id="water_fee"
+              name="water_fee"
+              type="number"
+              step="1"
+              defaultValue={apartment?.water_fee ?? 0}
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="electricity_fee">{feeBreakdownLabel("electricity_fee")}</Label>
+            <Input
+              id="electricity_fee"
+              name="electricity_fee"
+              type="number"
+              step="1"
+              defaultValue={apartment?.electricity_fee ?? 0}
               required
             />
           </div>
@@ -149,10 +184,14 @@ export function ApartmentManagement({
   apartments,
   filters,
   total,
+  page,
+  limit,
 }: {
   apartments: ApartmentAdminRow[];
   filters: Filters;
   total: number;
+  page: number;
+  limit: number;
 }) {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -189,6 +228,7 @@ export function ApartmentManagement({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form method="get" className="grid gap-3 md:grid-cols-4">
+            <PaginationFormFields page={page} limit={limit} />
             <Input name="q" placeholder="Хайлт..." defaultValue={filters.q ?? ""} />
             <Input name="building" placeholder="Барилга..." defaultValue={filters.building ?? ""} />
             <select
@@ -295,6 +335,7 @@ export function ApartmentManagement({
               </tbody>
             </table>
           </ErpTableShell>
+          <TablePagination total={total} page={page} limit={limit} />
         </CardContent>
       </Card>
 

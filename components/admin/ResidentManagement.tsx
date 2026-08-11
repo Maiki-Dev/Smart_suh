@@ -25,6 +25,7 @@ import {
   erpSelectClassName,
 } from "@/components/ui/erp-dialog";
 import { notifyActionResult, useActionToast } from "@/lib/hooks/use-action-toast";
+import { PaginationFormFields, TablePagination } from "@/components/admin/TablePagination";
 import {
   StatusBadge,
   residentStatusTone,
@@ -154,6 +155,8 @@ export function ResidentManagement({
   apartments,
   filters,
   total,
+  page,
+  limit,
   defaultApartmentId,
   openCreateOnMount = false,
 }: {
@@ -161,6 +164,8 @@ export function ResidentManagement({
   apartments: ApartmentAdminRow[];
   filters: Filters;
   total: number;
+  page: number;
+  limit: number;
   defaultApartmentId?: string;
   openCreateOnMount?: boolean;
 }) {
@@ -197,6 +202,7 @@ export function ResidentManagement({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form method="get" className="grid gap-3 md:grid-cols-3">
+            <PaginationFormFields page={page} limit={limit} />
             <Input name="q" placeholder="Хайлт..." defaultValue={filters.q ?? ""} />
             <select
               name="status"
@@ -222,7 +228,7 @@ export function ResidentManagement({
                   <th className="px-3 py-3">И-мэйл</th>
                   <th className="px-3 py-3">Орон сууц</th>
                   <th className="px-3 py-3">Барилга</th>
-                  <th className="px-3 py-3">Нэвтрэлт</th>
+                  <th className="px-3 py-3">Зогсоолын эрх</th>
                   <th className="px-3 py-3">Эзэмшигч</th>
                   <th className="px-3 py-3">Төлөв</th>
                   <th className="px-3 py-3 text-right">Үйлдэл</th>
@@ -327,6 +333,7 @@ export function ResidentManagement({
               </tbody>
             </table>
           </div>
+          <TablePagination total={total} page={page} limit={limit} />
         </CardContent>
       </Card>
 

@@ -1,5 +1,5 @@
 import 'server-only';
-import type { InvoiceStatus } from '@/types';
+import type { InvoiceStatus, InvoiceFeeType } from '@/types';
 import { query, type DbClient } from '@/lib/db';
 
 export interface AdminOverviewStats {
@@ -126,7 +126,7 @@ export async function getAdminRecentActivity(
         SELECT
           id,
           'gate'::text AS kind,
-          CONCAT(action, ' — гатаа') AS title,
+          CONCAT(action, ' — зогсоол') AS title,
           COALESCE(triggered_by, reason) AS subtitle,
           created_at,
           NULL
@@ -165,17 +165,22 @@ export interface ResidentOverviewStats {
     floor: number | null;
     area_m2: number | null;
     monthly_fee: number;
+    apartment_fee: number;
+    parking_fee: number;
+    water_fee: number;
+    electricity_fee: number;
     status: string;
     building_name: string | null;
   } | null;
-  current_month_invoice: {
+  current_month_invoices: Array<{
     id: string;
+    fee_type: InvoiceFeeType;
     amount: number;
     paid_amount: number;
     remaining_amount: number;
     status: InvoiceStatus;
     due_date: string | null;
-  } | null;
+  }>;
   total_debt: number;
   vehicles: {
     id: string;
@@ -199,7 +204,8 @@ export async function getResidentOverviewStats(
     `
       WITH user_apt AS (
         SELECT a.id, a.apartment_number, a.tower, a.entrance, a.floor, a.area_m2,
-               a.monthly_fee, a.status, b.name AS building_name
+               a.monthly_fee, a.apartment_fee, a.parking_fee, a.water_fee, a.electricity_fee,
+               a.status, b.name AS building_name
           FROM residents r
           JOIN apartments a ON r.apartment_id = a.id
           LEFT JOIN buildings b ON a.building_id = b.id
@@ -210,14 +216,21 @@ export async function getResidentOverviewStats(
         SELECT EXTRACT(YEAR FROM NOW())::int AS yr, EXTRACT(MONTH FROM NOW())::int AS mn
       ),
       current_inv AS (
-        SELECT i.id, i.amount, i.paid_amount, i.remaining_amount, i.status, i.due_date
+        SELECT COALESCE(json_agg(json_build_object(
+                 'id', i.id,
+                 'fee_type', i.fee_type,
+                 'amount', i.amount,
+                 'paid_amount', i.paid_amount,
+                 'remaining_amount', i.remaining_amount,
+                 'status', i.status,
+                 'due_date', i.due_date
+               ) ORDER BY i.fee_type), '[]'::json) AS invoices
           FROM invoices i
           JOIN user_apt ua ON i.apartment_id = ua.id
           CROSS JOIN cur_year_month cym
          WHERE i.organization_id = $1
            AND i.billing_year = cym.yr
            AND i.billing_month = cym.mn
-         LIMIT 1
       ),
       all_debt AS (
         SELECT COALESCE(SUM(i.remaining_amount), 0)::numeric(18,2) AS total_debt
@@ -260,7 +273,7 @@ export async function getResidentOverviewStats(
       )
       SELECT
         (SELECT to_jsonb(ua) FROM user_apt ua LIMIT 1) AS apartment,
-        (SELECT to_jsonb(ci) FROM current_inv ci LIMIT 1) AS current_month_invoice,
+        (SELECT invoices FROM current_inv) AS current_month_invoices,
         COALESCE(ROUND(ad.total_debt)::bigint::int, 0) AS total_debt,
         COALESCE(vl.vehicles, '[]'::json) AS vehicles,
         COALESCE(pc.active_visitor_passes, 0) AS active_visitor_passes,
@@ -278,7 +291,7 @@ export async function getResidentOverviewStats(
   const row = rows[0];
   return {
     apartment: row?.apartment ?? null,
-    current_month_invoice: row?.current_month_invoice ?? null,
+    current_month_invoices: row?.current_month_invoices ?? [],
     total_debt: Number(row?.total_debt ?? 0),
     vehicles: row?.vehicles ?? [],
     active_visitor_passes: Number(row?.active_visitor_passes ?? 0),

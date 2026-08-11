@@ -32,7 +32,7 @@ export default async function ResidentVehiclePage() {
         unreadNotifications={overview.unread_notifications}
         activeSegment="vehicle"
         pageTitle="Машин"
-        pageSubtitle="Улсын дугаар, RFID, гaцaaны эрхийн төлөв"
+        pageSubtitle="Улсын дугаар, RFID, зогсоолын эрхийн төлөв"
       >
         <ResidentVehiclePanel
           vehicle={accessSummary.vehicle}

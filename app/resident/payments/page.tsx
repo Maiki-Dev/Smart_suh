@@ -8,6 +8,18 @@ import { getResidentOverviewStats } from '@/lib/queries/dashboard';
 import { getApartmentDebt } from '@/lib/queries/invoices';
 import { listInvoicesByApartment } from '@/lib/queries/invoices';
 import { listPaymentsByApartment } from '@/lib/queries/payments';
+import {
+  aggregateInvoiceTotals,
+  feeBreakdownFromApartment,
+  feeBreakdownFromInvoices,
+  invoiceFeeTypeLabel,
+} from '@/lib/fees/apartment-fees';
+import { FeeBreakdownPanel } from '@/components/resident/FeeBreakdownPanel';
+import {
+  formatBillingMonthMn,
+  formatDateOnlyDateTimeMn,
+  formatDateTimeMn,
+} from '@/lib/format/datetime';
 
 export default async function ResidentPaymentsPage() {
   const ctx = await requireRole(['RESIDENT']);
@@ -29,6 +41,17 @@ export default async function ResidentPaymentsPage() {
   const apartmentLabel = overview.apartment
     ? [overview.apartment.tower, overview.apartment.apartment_number].filter(Boolean).join(' · ')
     : '—';
+
+  const currentMonthSummary =
+    overview.current_month_invoices.length > 0
+      ? aggregateInvoiceTotals(overview.current_month_invoices)
+      : null;
+  const currentMonthFees =
+    overview.current_month_invoices.length > 0
+      ? feeBreakdownFromInvoices(overview.current_month_invoices)
+      : overview.apartment
+        ? feeBreakdownFromApartment(overview.apartment)
+        : null;
 
   return (
     <>
@@ -52,24 +75,20 @@ export default async function ResidentPaymentsPage() {
             </CardContent>
           </Card>
 
-          {overview.current_month_invoice ? (
+          {currentMonthFees ? (
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle>Энэ сарын нэхэмжлэл</CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <div className="text-2xl font-semibold tabular-nums">
-                    {formatMNT(overview.current_month_invoice.amount)}
-                  </div>
-                  <div className="text-sm text-zinc-500 mt-1">
-                    Төлсөн {formatMNT(overview.current_month_invoice.paid_amount)} · Үлд{' '}
-                    {formatMNT(overview.current_month_invoice.remaining_amount)}
-                  </div>
-                </div>
-                <StatusBadge
-                  label={invoiceStatusLabel(overview.current_month_invoice.status)}
-                  tone={paymentStatusTone(overview.current_month_invoice.status)}
+              <CardContent>
+                <FeeBreakdownPanel
+                  fees={currentMonthFees}
+                  title="Энэ сарын төлбөрүүд"
+                  description={`${overview.current_month_invoices.length} тусдаа нэхэмжлэл`}
+                  invoiceStatus={currentMonthSummary?.status}
+                  paidAmount={currentMonthSummary?.paid_amount}
+                  remainingAmount={currentMonthSummary?.remaining_amount}
+                  compact
                 />
               </CardContent>
             </Card>
@@ -91,7 +110,12 @@ export default async function ResidentPaymentsPage() {
                       <div>
                         <div className="font-medium">{invoice.invoice_number}</div>
                         <div className="text-xs text-zinc-500">
-                          {invoice.billing_year}/{invoice.billing_month} · {formatMNT(invoice.amount)}
+                          {formatBillingMonthMn(invoice.billing_year, invoice.billing_month)} ·{' '}
+                          {formatDateTimeMn(invoice.created_at)}
+                          {invoice.due_date
+                            ? ` · Төлөх: ${formatDateOnlyDateTimeMn(invoice.due_date)}`
+                            : ''}{' '}
+                          · {invoiceFeeTypeLabel(invoice.fee_type)} · {formatMNT(invoice.amount)}
                         </div>
                       </div>
                       <div className="text-right">
@@ -127,8 +151,8 @@ export default async function ResidentPaymentsPage() {
                           {paymentMethodLabel(payment.payment_method)} · {paymentRecordStatusLabel(payment.status)}
                         </div>
                       </div>
-                      <div className="text-xs text-zinc-500">
-                        {new Date(payment.paid_at).toLocaleDateString('mn-MN')}
+                      <div className="text-xs text-zinc-500 tabular-nums">
+                        {formatDateTimeMn(payment.paid_at)}
                       </div>
                     </div>
                   ))}

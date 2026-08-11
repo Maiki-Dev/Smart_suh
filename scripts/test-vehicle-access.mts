@@ -31,15 +31,24 @@ function fail(label: string, detail?: string) {
   process.exit(1);
 }
 
-function inv(year: number, month: number, status: Invoice['status'], remaining: number, paid = 0): Invoice {
+function inv(
+  year: number,
+  month: number,
+  status: Invoice['status'],
+  remaining: number,
+  paid = 0,
+  feeType: Invoice['fee_type'] = 'PARKING',
+  amount = 50000,
+): Invoice {
   return {
-    id: `${year}-${month}`,
+    id: `${year}-${month}-${feeType}`,
     organization_id: ORG,
     apartment_id: APT,
-    invoice_number: `T-${year}-${month}`,
+    invoice_number: `T-${year}-${month}-${feeType}`,
     billing_year: year,
     billing_month: month,
-    amount: 250000,
+    fee_type: feeType,
+    amount,
     paid_amount: paid,
     remaining_amount: remaining,
     due_date: null,
@@ -52,16 +61,16 @@ function inv(year: number, month: number, status: Invoice['status'], remaining: 
 async function setInvoices(rows: Array<{ year: number; month: number; status: Invoice['status']; paid: number }>) {
   await query('DELETE FROM invoices WHERE apartment_id = $1', [APT]);
   for (const row of rows) {
-    const amount = 250000;
+    const amount = 50000;
     const paid = row.paid;
     await query(
       `
         INSERT INTO invoices
           (organization_id, apartment_id, invoice_number, billing_year, billing_month,
-           amount, paid_amount, due_date, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, '2025-12-10', $8::inv_status)
+           fee_type, amount, paid_amount, due_date, status)
+        VALUES ($1, $2, $3, $4, $5, 'PARKING'::invoice_fee_type, $6, $7, '2025-12-10', $8::inv_status)
       `,
-      [ORG, APT, `TEST-${row.year}-${row.month}`, row.year, row.month, amount, paid, row.status],
+      [ORG, APT, `TEST-${row.year}-${row.month}-PRK`, row.year, row.month, amount, paid, row.status],
     );
   }
 }
@@ -71,39 +80,39 @@ async function main() {
 
   // Unit: consecutive unpaid logic
   const oneUnpaid = countConsecutiveUnpaidMonths([
-    inv(2025, 7, 'PAID', 0, 250000),
-    inv(2025, 8, 'PENDING', 250000),
-  ]);
+    inv(2025, 7, 'PAID', 0, 50000),
+    inv(2025, 8, 'PENDING', 50000),
+  ], 'PARKING');
   if (oneUnpaid !== 1 || shouldDisableGateAccess(oneUnpaid)) fail('1 unpaid month');
   ok('1 unpaid month → ACTIVE');
 
   const twoConsecutive = countConsecutiveUnpaidMonths([
-    inv(2025, 7, 'PAID', 0, 250000),
-    inv(2025, 8, 'PENDING', 250000),
-    inv(2025, 9, 'OVERDUE', 250000),
-  ]);
+    inv(2025, 7, 'PAID', 0, 50000),
+    inv(2025, 8, 'PENDING', 50000),
+    inv(2025, 9, 'OVERDUE', 50000),
+  ], 'PARKING');
   if (twoConsecutive !== 2 || !shouldDisableGateAccess(twoConsecutive)) fail('2 consecutive unpaid');
   ok('2 consecutive unpaid months → DISABLED');
 
   const threeConsecutive = countConsecutiveUnpaidMonths([
-    inv(2025, 5, 'PENDING', 250000),
-    inv(2025, 6, 'PARTIAL', 150000, 100000),
-    inv(2025, 7, 'OVERDUE', 250000),
-  ]);
+    inv(2025, 5, 'PENDING', 50000),
+    inv(2025, 6, 'PARTIAL', 15000, 35000),
+    inv(2025, 7, 'OVERDUE', 50000),
+  ], 'PARKING');
   if (threeConsecutive !== 3 || !shouldDisableGateAccess(threeConsecutive)) fail('3 consecutive unpaid');
   ok('3 consecutive unpaid months → DISABLED');
 
   const nonConsecutive = countConsecutiveUnpaidMonths([
-    inv(2025, 7, 'PENDING', 250000),
-    inv(2025, 8, 'PAID', 0, 250000),
-    inv(2025, 9, 'PENDING', 250000),
-  ]);
+    inv(2025, 7, 'PENDING', 50000),
+    inv(2025, 8, 'PAID', 0, 50000),
+    inv(2025, 9, 'PENDING', 50000),
+  ], 'PARKING');
   if (nonConsecutive !== 1 || shouldDisableGateAccess(nonConsecutive)) fail('non-consecutive unpaid');
   ok('non-consecutive unpaid → ACTIVE');
 
   // Integration: disable then restore via payment
   await setInvoices([
-    { year: 2025, month: 7, status: 'PAID', paid: 250000 },
+    { year: 2025, month: 7, status: 'PAID', paid: 50000 },
     { year: 2025, month: 8, status: 'PENDING', paid: 0 },
     { year: 2025, month: 9, status: 'PENDING', paid: 0 },
   ]);
@@ -126,7 +135,7 @@ async function main() {
   if (vehicle?.gate_access !== false) fail('vehicle gate_access not false');
 
   const { rows: invRows } = await query<{ id: string; remaining_amount: string }>(
-    `SELECT id, remaining_amount::text FROM invoices WHERE apartment_id = $1 AND billing_year = 2025 AND billing_month = 8 LIMIT 1`,
+    `SELECT id, remaining_amount::text FROM invoices WHERE apartment_id = $1 AND billing_year = 2025 AND billing_month = 8 AND fee_type = 'PARKING' LIMIT 1`,
     [APT],
   );
   const augustInvoice = invRows[0];

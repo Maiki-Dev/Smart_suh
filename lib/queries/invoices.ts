@@ -1,8 +1,20 @@
 import 'server-only';
 import { query, withTransaction, type DbClient } from '@/lib/db';
-import type { Invoice, InvoiceStatus, PaginationOptions, ListResult } from '@/types';
+import type { Invoice, InvoiceFeeType, InvoiceStatus, PaginationOptions, ListResult } from '@/types';
+import {
+  FEE_TYPE_SUFFIX,
+  INVOICE_FEE_TYPES,
+  feeAmountFromApartment,
+} from '@/lib/fees/apartment-fees';
 import { createAuditLog } from '@/lib/queries/audit_logs';
 import { createNotification } from '@/lib/queries/notifications';
+
+const INVOICE_RETURNING = `
+  id, organization_id, apartment_id, invoice_number,
+  billing_year, billing_month, fee_type, amount,
+  paid_amount, remaining_amount,
+  due_date, status, created_at, updated_at
+`;
 
 export interface InvoiceAdminRow extends Invoice {
   apartment_number: string;
@@ -17,6 +29,7 @@ export interface GenerateMonthlyInvoicesResult {
   billing_month: number;
   created: number;
   skipped: number;
+  zero_fee: number;
   errors: string[];
 }
 
@@ -48,9 +61,7 @@ export async function syncInvoiceStatus(
       UPDATE invoices
          SET status = $1::inv_status
        WHERE id = $2
-       RETURNING id, organization_id, apartment_id, invoice_number,
-                 billing_year, billing_month, amount, paid_amount, remaining_amount,
-                 due_date, status, created_at, updated_at
+       RETURNING ${INVOICE_RETURNING}
     `,
     [nextStatus, invoiceId],
     client,
@@ -99,6 +110,7 @@ async function nextInvoiceNumber(
   organizationId: string,
   year: number,
   month: number,
+  feeType: InvoiceFeeType,
   client?: DbClient,
 ): Promise<string> {
   const { rows } = await query<{ count: string }>(
@@ -113,7 +125,7 @@ async function nextInvoiceNumber(
     client,
   );
   const seq = String(parseInt(rows[0]?.count ?? '0', 10) + 1).padStart(4, '0');
-  return `INV-${year}-${String(month).padStart(2, '0')}-${seq}`;
+  return `INV-${year}-${String(month).padStart(2, '0')}-${seq}-${FEE_TYPE_SUFFIX[feeType]}`;
 }
 
 function defaultDueDate(year: number, month: number): string {
@@ -184,6 +196,7 @@ export async function generateMonthlyInvoices(input?: {
       billing_month: billingMonth,
       created: 0,
       skipped: 0,
+      zero_fee: 0,
       errors: [],
     };
 
@@ -192,10 +205,15 @@ export async function generateMonthlyInvoices(input?: {
     const { rows: apartments } = await query<{
       id: string;
       monthly_fee: number;
+      apartment_fee: number;
+      parking_fee: number;
+      water_fee: number;
+      electricity_fee: number;
       apartment_number: string;
     }>(
       `
-        SELECT id, monthly_fee, apartment_number
+        SELECT id, monthly_fee, apartment_fee, parking_fee, water_fee, electricity_fee,
+               apartment_number
           FROM apartments
          WHERE organization_id = $1
            AND status = 'OCCUPIED'
@@ -207,50 +225,78 @@ export async function generateMonthlyInvoices(input?: {
 
     for (const apt of apartments) {
       try {
-        const existing = await getInvoiceForMonth(org.id, apt.id, billingYear, billingMonth, input?.client);
-        if (existing) {
-          result.skipped++;
-          continue;
-        }
+        let createdForApartment = 0;
 
-        const invoiceNumber = await nextInvoiceNumber(org.id, billingYear, billingMonth, input?.client);
-        const invoice = await createInvoice({
-          organization_id: org.id,
-          apartment_id: apt.id,
-          invoice_number: invoiceNumber,
-          billing_year: billingYear,
-          billing_month: billingMonth,
-          amount: apt.monthly_fee,
-          due_date: defaultDueDate(billingYear, billingMonth),
-          status: 'PENDING',
-          client: input?.client,
-        });
+        for (const feeType of INVOICE_FEE_TYPES) {
+          const feeAmount = feeAmountFromApartment(apt, feeType);
+          if (feeAmount <= 0) {
+            result.zero_fee++;
+            continue;
+          }
 
-        await createAuditLog({
-          organization_id: org.id,
-          action: 'INVOICE_GENERATED',
-          entity_type: 'invoice',
-          entity_id: invoice.id,
-          new_data: {
-            invoice_number: invoice.invoice_number,
+          const existing = await getInvoiceForMonthAndFeeType(
+            org.id,
+            apt.id,
+            billingYear,
+            billingMonth,
+            feeType,
+            input?.client,
+          );
+          if (existing) {
+            result.skipped++;
+            continue;
+          }
+
+          const invoiceNumber = await nextInvoiceNumber(
+            org.id,
+            billingYear,
+            billingMonth,
+            feeType,
+            input?.client,
+          );
+          const invoice = await createInvoice({
+            organization_id: org.id,
             apartment_id: apt.id,
-            amount: invoice.amount,
+            invoice_number: invoiceNumber,
             billing_year: billingYear,
             billing_month: billingMonth,
-          },
-          client: input?.client,
-        });
+            fee_type: feeType,
+            amount: feeAmount,
+            due_date: defaultDueDate(billingYear, billingMonth),
+            status: 'PENDING',
+            client: input?.client,
+          });
 
-        await notifyApartmentResidents(
-          org.id,
-          apt.id,
-          'Шинэ нэхэмжлэл',
-          `${billingYear}/${billingMonth} сарын ${formatInvoicePeriod(billingYear, billingMonth)} нэхэмжлэл (${apt.apartment_number}) — ${invoice.amount.toLocaleString('mn-MN')}₮`,
-          'INVOICE',
-          input?.client,
-        );
+          await createAuditLog({
+            organization_id: org.id,
+            action: 'INVOICE_GENERATED',
+            entity_type: 'invoice',
+            entity_id: invoice.id,
+            new_data: {
+              invoice_number: invoice.invoice_number,
+              apartment_id: apt.id,
+              fee_type: feeType,
+              amount: invoice.amount,
+              billing_year: billingYear,
+              billing_month: billingMonth,
+            },
+            client: input?.client,
+          });
 
-        result.created++;
+          createdForApartment++;
+          result.created++;
+        }
+
+        if (createdForApartment > 0) {
+          await notifyApartmentResidents(
+            org.id,
+            apt.id,
+            'Шинэ нэхэмжлэл',
+            `${billingYear}/${billingMonth} сарын ${formatInvoicePeriod(billingYear, billingMonth)} нэхэмжлэл (${apt.apartment_number}) — ${createdForApartment} төрөл`,
+            'INVOICE',
+            input?.client,
+          );
+        }
       } catch (error) {
         result.errors.push(
           `${apt.apartment_number}: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -286,9 +332,7 @@ export async function cancelInvoice(
         UPDATE invoices
            SET status = 'CANCELLED'::inv_status
          WHERE id = $1
-         RETURNING id, organization_id, apartment_id, invoice_number,
-                   billing_year, billing_month, amount, paid_amount, remaining_amount,
-                   due_date, status, created_at, updated_at
+         RETURNING ${INVOICE_RETURNING}
       `,
       [invoiceId],
       tx,
@@ -315,7 +359,8 @@ export async function cancelInvoice(
 
 const ADMIN_LIST_SQL = `
   SELECT i.id, i.organization_id, i.apartment_id, i.invoice_number,
-         i.billing_year, i.billing_month, i.amount, i.paid_amount, i.remaining_amount,
+         i.billing_year, i.billing_month, i.fee_type, i.amount,
+         i.paid_amount, i.remaining_amount,
          i.due_date, i.status, i.created_at, i.updated_at,
          a.apartment_number, b.name AS building_name, a.tower,
          NULLIF(TRIM(CONCAT(owner.first_name, ' ', owner.last_name)), '') AS owner_name
@@ -430,9 +475,7 @@ export async function listInvoicesAdminView(
 }
 
 const SELECT_SQL = `
-  SELECT id, organization_id, apartment_id, invoice_number,
-         billing_year, billing_month, amount, paid_amount, remaining_amount,
-         due_date, status, created_at, updated_at
+  SELECT ${INVOICE_RETURNING}
     FROM invoices
 `;
 
@@ -444,19 +487,45 @@ export async function getInvoiceById(
   return rows[0] ?? null;
 }
 
-export async function getInvoiceForMonth(
+export async function getInvoiceForMonthAndFeeType(
+  organizationId: string,
+  apartmentId: string,
+  year: number,
+  month: number,
+  feeType: InvoiceFeeType,
+  client?: DbClient,
+): Promise<Invoice | null> {
+  const { rows } = await query<Invoice>(
+    `${SELECT_SQL}
+     WHERE organization_id = $1
+       AND apartment_id = $2
+       AND billing_year = $3
+       AND billing_month = $4
+       AND fee_type = $5::invoice_fee_type`,
+    [organizationId, apartmentId, year, month, feeType],
+    client,
+  );
+  return rows[0] ?? null;
+}
+
+export async function listInvoicesForMonth(
   organizationId: string,
   apartmentId: string,
   year: number,
   month: number,
   client?: DbClient,
-): Promise<Invoice | null> {
+): Promise<Invoice[]> {
   const { rows } = await query<Invoice>(
-    `${SELECT_SQL} WHERE organization_id = $1 AND apartment_id = $2 AND billing_year = $3 AND billing_month = $4`,
+    `${SELECT_SQL}
+     WHERE organization_id = $1
+       AND apartment_id = $2
+       AND billing_year = $3
+       AND billing_month = $4
+     ORDER BY fee_type ASC`,
     [organizationId, apartmentId, year, month],
     client,
   );
-  return rows[0] ?? null;
+  return rows;
 }
 
 export async function listInvoicesByApartment(
@@ -482,7 +551,7 @@ export async function listInvoicesByApartment(
 
   const order =
     safeOrder === 'billing_year'
-      ? `ORDER BY billing_year ${safeDir}, billing_month ${safeDir}`
+      ? `ORDER BY billing_year ${safeDir}, billing_month ${safeDir}, fee_type ASC`
       : `ORDER BY "${safeOrder}" ${safeDir}`;
 
   const [dataRes, countRes] = await Promise.all([
@@ -548,7 +617,7 @@ export async function listInvoicesByOrganization(
   const where = `WHERE ${clauses.join(' AND ')}`;
   const order =
     safeOrder === 'billing_year'
-      ? `ORDER BY billing_year ${safeDir}, billing_month ${safeDir}`
+      ? `ORDER BY billing_year ${safeDir}, billing_month ${safeDir}, fee_type ASC`
       : `ORDER BY "${safeOrder}" ${safeDir}`;
 
   const [dataRes, countRes] = await Promise.all([
@@ -576,6 +645,7 @@ export async function createInvoice(input: {
   invoice_number: string;
   billing_year: number;
   billing_month: number;
+  fee_type: InvoiceFeeType;
   amount: number;
   paid_amount?: number;
   due_date?: string | null;
@@ -588,6 +658,7 @@ export async function createInvoice(input: {
     invoice_number,
     billing_year,
     billing_month,
+    fee_type,
     amount,
     paid_amount = 0,
     due_date = null,
@@ -599,13 +670,22 @@ export async function createInvoice(input: {
     `
       INSERT INTO invoices
         (organization_id, apartment_id, invoice_number, billing_year, billing_month,
-         amount, paid_amount, due_date, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::inv_status)
-      RETURNING id, organization_id, apartment_id, invoice_number,
-                billing_year, billing_month, amount, paid_amount, remaining_amount,
-                due_date, status, created_at, updated_at
+         fee_type, amount, paid_amount, due_date, status)
+      VALUES ($1, $2, $3, $4, $5, $6::invoice_fee_type, $7, $8, $9, $10::inv_status)
+      RETURNING ${INVOICE_RETURNING}
     `,
-    [organization_id, apartment_id, invoice_number, billing_year, billing_month, amount, paid_amount, due_date, status],
+    [
+      organization_id,
+      apartment_id,
+      invoice_number,
+      billing_year,
+      billing_month,
+      fee_type,
+      amount,
+      paid_amount,
+      due_date,
+      status,
+    ],
     client,
   );
   return rows[0];
@@ -634,9 +714,7 @@ export async function updateInvoice(
          SET invoice_number = $1, amount = $2, paid_amount = $3,
              due_date = $4, status = $5::inv_status
        WHERE id = $6
-       RETURNING id, organization_id, apartment_id, invoice_number,
-                 billing_year, billing_month, amount, paid_amount, remaining_amount,
-                 due_date, status, created_at, updated_at
+       RETURNING ${INVOICE_RETURNING}
     `,
     [
       merged.invoice_number,
@@ -660,9 +738,7 @@ export async function addPaymentToInvoice(
       UPDATE invoices
          SET paid_amount = paid_amount + $1
        WHERE id = $2
-       RETURNING id, organization_id, apartment_id, invoice_number,
-                 billing_year, billing_month, amount, paid_amount, remaining_amount,
-                 due_date, status, created_at, updated_at
+       RETURNING ${INVOICE_RETURNING}
     `,
     [paymentAmount, invoiceId],
     client,

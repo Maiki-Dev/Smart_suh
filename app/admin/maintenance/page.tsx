@@ -4,6 +4,7 @@ import { AdminShell } from '@/components/layout/AdminShell';
 import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { MaintenanceManagement } from '@/components/admin/MaintenanceManagement';
 import { listMaintenanceAdminView } from '@/lib/queries/maintenance';
+import { parseTablePagination } from '@/lib/admin/pagination';
 import type { MaintenanceCategory, MaintenancePriority, MaintenanceStatus } from '@/types';
 
 export default async function AdminMaintenancePage({
@@ -14,9 +15,12 @@ export default async function AdminMaintenancePage({
     status?: string;
     priority?: string;
     category?: string;
+    page?: string;
+    limit?: string;
   }>;
 }) {
   const params = await searchParams;
+  const { page, limit, offset } = parseTablePagination(params);
   const ctx = await requireAdminRole();
   const orgScope = getScopedOrganizationId(ctx);
 
@@ -25,7 +29,8 @@ export default async function AdminMaintenancePage({
     status: (params.status as MaintenanceStatus | undefined) || undefined,
     priority: (params.priority as MaintenancePriority | undefined) || undefined,
     category: (params.category as MaintenanceCategory | undefined) || undefined,
-    limit: 200,
+    limit,
+    offset,
   });
 
   return (
@@ -46,6 +51,8 @@ export default async function AdminMaintenancePage({
             category: params.category,
           }}
           total={maintenanceRes.total}
+          page={page}
+          limit={limit}
         />
       </AdminShell>
     </>

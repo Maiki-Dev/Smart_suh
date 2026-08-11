@@ -7,9 +7,14 @@ export function isInvoiceUnpaidForGate(invoice: Pick<Invoice, 'status' | 'remain
 
 /** Count trailing consecutive unpaid months after chronological invoice scan. */
 export function countConsecutiveUnpaidMonths(
-  invoices: Pick<Invoice, 'billing_year' | 'billing_month' | 'status' | 'remaining_amount' | 'paid_amount' | 'amount'>[],
+  invoices: Pick<
+    Invoice,
+    'billing_year' | 'billing_month' | 'status' | 'remaining_amount' | 'paid_amount' | 'amount' | 'fee_type'
+  >[],
+  feeType?: Invoice['fee_type'],
 ): number {
-  const sorted = [...invoices]
+  const scoped = feeType ? invoices.filter((invoice) => invoice.fee_type === feeType) : invoices;
+  const sorted = [...scoped]
     .filter((inv) => inv.status !== 'CANCELLED')
     .sort((a, b) => {
       if (a.billing_year !== b.billing_year) return a.billing_year - b.billing_year;

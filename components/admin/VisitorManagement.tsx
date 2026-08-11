@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { passStatusLabel } from "@/lib/admin/format";
 import { formatDateTimeMn } from "@/lib/format/datetime";
+import { PaginationFormFields, TablePagination } from "@/components/admin/TablePagination";
 
 function passTone(status: string): "emerald" | "amber" | "rose" | "zinc" {
   switch (status) {
@@ -32,11 +33,15 @@ export function VisitorManagement({
   apartments,
   filters,
   total,
+  page,
+  limit,
 }: {
   passes: VisitorPassAdminRow[];
   apartments: ApartmentAdminRow[];
   filters: { q?: string; status?: string; apartment?: string; from?: string; to?: string };
   total: number;
+  page: number;
+  limit: number;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -48,6 +53,7 @@ export function VisitorManagement({
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <form method="get" className="grid gap-3 lg:grid-cols-6">
+          <PaginationFormFields page={page} limit={limit} />
           <Input name="q" placeholder="Хайлт..." defaultValue={filters.q ?? ""} className="lg:col-span-2" />
           <select
             name="status"
@@ -137,6 +143,7 @@ export function VisitorManagement({
             </tbody>
           </table>
         </div>
+        <TablePagination total={total} page={page} limit={limit} />
       </CardContent>
     </Card>
   );

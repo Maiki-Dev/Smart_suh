@@ -5,14 +5,16 @@ import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { PaymentManagement } from '@/components/admin/PaymentManagement';
 import { listPaymentsAdminView } from '@/lib/queries/payments';
 import { listInvoicesAdminView } from '@/lib/queries/invoices';
+import { parseTablePagination } from '@/lib/admin/pagination';
 import type { PaymentMethod } from '@/types';
 
 export default async function AdminPaymentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; method?: string }>;
+  searchParams: Promise<{ q?: string; method?: string; page?: string; limit?: string }>;
 }) {
   const params = await searchParams;
+  const { page, limit, offset } = parseTablePagination(params);
   const ctx = await requireAdminRole();
   const orgScope = getScopedOrganizationId(ctx);
 
@@ -20,7 +22,8 @@ export default async function AdminPaymentsPage({
     listPaymentsAdminView(orgScope, {
       search: params.q,
       payment_method: (params.method as PaymentMethod | undefined) || undefined,
-      limit: 200,
+      limit,
+      offset,
     }),
     listInvoicesAdminView(orgScope, { limit: 500 }),
   ]);
@@ -47,6 +50,8 @@ export default async function AdminPaymentsPage({
           openInvoices={openInvoices}
           filters={{ q: params.q, method: params.method }}
           total={paymentsRes.total}
+          page={page}
+          limit={limit}
         />
       </AdminShell>
     </>

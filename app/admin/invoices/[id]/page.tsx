@@ -7,6 +7,12 @@ import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge, paymentStatusTone } from '@/components/admin/StatusBadge';
 import { formatMNT, invoiceStatusLabel, paymentMethodLabel } from '@/lib/admin/format';
+import { invoiceFeeTypeLabel } from '@/lib/fees/apartment-fees';
+import {
+  formatBillingMonthMn,
+  formatDateOnlyDateTimeMn,
+  formatDateTimeMn,
+} from '@/lib/format/datetime';
 import { getInvoiceById } from '@/lib/queries/invoices';
 import { listPaymentsByInvoice } from '@/lib/queries/payments';
 import { listApartmentsAdminView } from '@/lib/queries/apartments';
@@ -64,15 +70,17 @@ export default async function AdminInvoiceDetailPage({
                 }
               />
               <Info
-                label="Сар"
-                value={`${invoice.billing_year}/${String(invoice.billing_month).padStart(2, '0')}`}
+                label="Төлбөрийн сар"
+                value={formatBillingMonthMn(invoice.billing_year, invoice.billing_month)}
               />
-              <Info label="Дүн" value={formatMNT(invoice.amount)} />
+              <Info label="Үүссэн" value={formatDateTimeMn(invoice.created_at)} />
+              <Info label="Төрөл" value={invoiceFeeTypeLabel(invoice.fee_type)} />
+              <Info label="Нийт дүн" value={formatMNT(invoice.amount)} />
               <Info label="Төлсөн" value={formatMNT(invoice.paid_amount)} />
               <Info label="Үлдэгдэл" value={formatMNT(invoice.remaining_amount)} />
               <Info
                 label="Төлөгдөх огноо"
-                value={invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('mn-MN') : '—'}
+                value={formatDateOnlyDateTimeMn(invoice.due_date)}
               />
               <div className="flex flex-col gap-1">
                 <span className="text-xs uppercase tracking-wider text-zinc-500">Төлөв</span>
@@ -104,7 +112,7 @@ export default async function AdminInvoiceDetailPage({
                       </div>
                     </div>
                     <div className="text-xs text-zinc-500">
-                      {new Date(payment.paid_at).toLocaleString('mn-MN')}
+                      {formatDateTimeMn(payment.paid_at)}
                     </div>
                   </div>
                 ))}

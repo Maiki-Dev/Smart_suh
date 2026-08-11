@@ -63,8 +63,31 @@ export function shouldUseSsl(connectionString: string): boolean {
   );
 }
 
-function isSupabaseTransactionPooler(connectionString: string): boolean {
-  return /pooler\.supabase\.com:6543|pgbouncer=true/i.test(connectionString);
+export function isSupabaseTransactionPooler(connectionString: string): boolean {
+  return /pooler\.supabase\.com:6543|[?&]pgbouncer=true/i.test(connectionString);
+}
+
+export function isSupabaseSessionPooler(connectionString: string): boolean {
+  return /pooler\.supabase\.com(?::5432)?(?:\/|$|\?)/i.test(connectionString)
+    && !isSupabaseTransactionPooler(connectionString);
+}
+
+function resolvePoolMax(connectionString: string): number {
+  const envMax = process.env.DATABASE_POOL_MAX?.trim();
+  if (envMax) {
+    const parsed = Number(envMax);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return Math.floor(parsed);
+    }
+  }
+
+  // Supabase pooler tiers share a small server-side limit (often 15 in session mode).
+  // Next.js dev/build can spawn many workers — keep the client pool tiny.
+  if (isSupabaseTransactionPooler(connectionString) || isSupabaseSessionPooler(connectionString)) {
+    return 1;
+  }
+
+  return 5;
 }
 
 export function getPgPoolConfig(connectionString: string): PoolConfig {
@@ -73,10 +96,11 @@ export function getPgPoolConfig(connectionString: string): PoolConfig {
 
   return {
     connectionString,
-    max: transactionPooler ? 1 : 10,
-    idleTimeoutMillis: 30_000,
+    max: resolvePoolMax(connectionString),
+    idleTimeoutMillis: 10_000,
     connectionTimeoutMillis: 15_000,
     ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+    ...(transactionPooler ? { options: '-c statement_cache_mode=off' } : {}),
   };
 }
 
@@ -91,6 +115,20 @@ export function assertDatabaseUrl(connectionString = getDatabaseUrl()): string {
 
 export function getSupabaseConnectionHint(error: unknown): string | null {
   const message = error instanceof Error ? error.message : String(error);
+
+  if (/max clients reached|max clients are limited|pool_size/i.test(message)) {
+    if (isSupabaseSessionPooler(getDatabaseUrl())) {
+      return (
+        'Supabase Session pooler (port 5432) холболтын хязgaar (≈15) дүүрсэн байна. ' +
+        'DATABASE_URL-ийг Transaction pooler (port 6543) болгон солино уу, эсвэл dev server-ээ restart хийнэ. ' +
+        'Жишээ: postgresql://postgres.[ref]:[pass]@aws-0-REGION.pooler.supabase.com:6543/postgres'
+      );
+    }
+    return (
+      'PostgreSQL холболтын pool дүүрсэн байна. Dev server restart хийж, DATABASE_POOL_MAX=1 тохируулна уу.'
+    );
+  }
+
   if (!/ENOTFOUND|ETIMEDOUT|timeout expired|EAI_AGAIN/i.test(message)) {
     return null;
   }

@@ -9,7 +9,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import type { LucideIcon } from 'lucide-react';
 import {
   Home as HomeIcon,
-  Wallet as WalletIcon,
   AlertTriangle as AlertTriangleIcon,
   Car as CarIcon,
   Waypoints as WaypointsIcon,
@@ -34,7 +33,7 @@ import { getResidentByEmail } from '@/lib/queries/residents';
 import { listInvoicesByApartment } from '@/lib/queries/invoices';
 import { listAnnouncementsByOrganization } from '@/lib/queries/announcements';
 import { listGateAccessLogsForApartment } from '@/lib/queries/gate_access_logs';
-import { formatDateMn } from '@/lib/format/datetime';
+import { formatBillingMonthMn, formatDateMn, formatDateTimeMn, formatDateOnlyDateTimeMn } from '@/lib/format/datetime';
 import { cn } from '@/lib/utils';
 import {
   formatMNT,
@@ -42,7 +41,32 @@ import {
   invoiceStatusLabel,
   vehicleTypeLabel,
 } from '@/lib/admin/format';
+import {
+  aggregateInvoiceTotals,
+  feeBreakdownFromApartment,
+  feeBreakdownFromInvoices,
+  invoiceFeeTypeLabel,
+  type FeeBreakdown,
+} from '@/lib/fees/apartment-fees';
+import { FeeBreakdownPanel } from '@/components/resident/FeeBreakdownPanel';
 import type { Invoice, Announcement, GateAccessLog } from '@/types';
+
+function resolveCurrentFees(overview: ResidentOverviewStats): FeeBreakdown | null {
+  if (overview.current_month_invoices.length > 0) {
+    return feeBreakdownFromInvoices(overview.current_month_invoices);
+  }
+  if (overview.apartment) {
+    return feeBreakdownFromApartment(overview.apartment);
+  }
+  return null;
+}
+
+function resolveCurrentSummary(overview: ResidentOverviewStats) {
+  if (overview.current_month_invoices.length > 0) {
+    return aggregateInvoiceTotals(overview.current_month_invoices);
+  }
+  return null;
+}
 
 function relativeTime(iso: string): string {
   const diff = Math.max(0, Date.now() - new Date(iso).getTime());
@@ -130,9 +154,8 @@ export default async function ResidentDashboardPage() {
           <ResidentSetupBanner reason={setupReason} />
         ) : null}
 
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <ApartmentCard stats={overview} userName={`${ctx.user.first_name} ${ctx.user.last_name}`} />
-          <MonthlyFeeCard stats={overview} />
           <DebtCard stats={overview} />
           <QuickLinksCard
             unread={overview.unread_notifications}
@@ -140,6 +163,17 @@ export default async function ResidentDashboardPage() {
             visitors={overview.active_visitor_passes}
           />
         </div>
+
+        {resolveCurrentFees(overview) ? (
+          <div className="mb-6">
+            <FeeBreakdownPanel
+              fees={resolveCurrentFees(overview)!}
+              invoiceStatus={resolveCurrentSummary(overview)?.status}
+              paidAmount={resolveCurrentSummary(overview)?.paid_amount}
+              remainingAmount={resolveCurrentSummary(overview)?.remaining_amount}
+            />
+          </div>
+        ) : null}
 
         <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
@@ -266,53 +300,6 @@ function ApartmentCard({
   );
 }
 
-function MonthlyFeeCard({ stats }: { stats: ResidentOverviewStats }) {
-  const apt = stats.apartment;
-  const inv = stats.current_month_invoice;
-  const paidPct = inv && inv.amount > 0 ? Math.round((100 * inv.paid_amount) / inv.amount) : 100;
-
-  return (
-    <Card>
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-xs text-muted-foreground">Сарын төлбөр</p>
-            <p className="text-2xl font-semibold tabular-nums tracking-tight">
-              {apt ? formatMNT(apt.monthly_fee) : '—'}
-            </p>
-            {inv ? (
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <Badge className={cn('text-[11px]', invoiceStatusTone(inv.status))}>
-                  {invoiceStatusLabel(inv.status)}
-                </Badge>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  Төлсөн {formatMNT(inv.paid_amount)} · {paidPct}%
-                </span>
-                {inv.due_date ? (
-                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <CalendarIcon className="size-3" />
-                    {formatDateMn(inv.due_date)}
-                  </span>
-                ) : null}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">Энэ сарын нэхэмжлэл үүсээгүй</p>
-            )}
-          </div>
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
-            <WalletIcon className="size-4 text-muted-foreground" />
-          </div>
-        </div>
-        {inv ? (
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${paidPct}%` }} />
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
-}
-
 function DebtCard({ stats }: { stats: ResidentOverviewStats }) {
   const hasDebt = stats.total_debt > 0;
 
@@ -409,11 +396,12 @@ function InvoiceTable({ data }: { data: Invoice[] }) {
   return (
     <div className="overflow-hidden rounded-lg border border-border">
       <div className="grid grid-cols-12 gap-2 bg-muted/40 px-3 py-2 text-[11px] font-medium text-muted-foreground sm:px-4">
-        <div className="col-span-3 sm:col-span-2">Сар</div>
-        <div className="col-span-4 sm:col-span-3">Дүн</div>
+        <div className="col-span-3 sm:col-span-2">Огноо</div>
+        <div className="col-span-3 sm:col-span-2">Төрөл</div>
+        <div className="col-span-3 sm:col-span-2">Дүн</div>
         <div className="hidden sm:col-span-2 sm:block">Төлсөн</div>
-        <div className="col-span-3 sm:col-span-2">Үлдэгдэл</div>
-        <div className="col-span-2 text-right sm:col-span-3">Төлөв</div>
+        <div className="col-span-2 sm:col-span-2">Үлдэгдэл</div>
+        <div className="col-span-1 text-right sm:col-span-2">Төлөв</div>
       </div>
       <div className="divide-y divide-border">
         {data.map((inv) => (
@@ -423,11 +411,20 @@ function InvoiceTable({ data }: { data: Invoice[] }) {
           >
             <div className="col-span-3 sm:col-span-2">
               <p className="font-medium tabular-nums">
-                {inv.billing_year}·{String(inv.billing_month).padStart(2, '0')}
+                {formatBillingMonthMn(inv.billing_year, inv.billing_month)}
               </p>
+              <p className="text-[11px] text-muted-foreground tabular-nums">
+                {formatDateTimeMn(inv.created_at)}
+              </p>
+              {inv.due_date ? (
+                <p className="text-[11px] text-muted-foreground tabular-nums">
+                  Төлөх: {formatDateOnlyDateTimeMn(inv.due_date)}
+                </p>
+              ) : null}
               <p className="truncate text-[11px] text-muted-foreground">#{inv.invoice_number}</p>
             </div>
-            <div className="col-span-4 font-medium tabular-nums sm:col-span-3">
+            <div className="col-span-3 text-sm sm:col-span-2">{invoiceFeeTypeLabel(inv.fee_type)}</div>
+            <div className="col-span-3 font-medium tabular-nums sm:col-span-2">
               {formatMNT(inv.amount)}
             </div>
             <div className="hidden tabular-nums text-emerald-700 dark:text-emerald-300 sm:col-span-2 sm:block">
@@ -435,13 +432,13 @@ function InvoiceTable({ data }: { data: Invoice[] }) {
             </div>
             <div
               className={cn(
-                'col-span-3 font-medium tabular-nums sm:col-span-2',
+                'col-span-2 font-medium tabular-nums sm:col-span-2',
                 inv.remaining_amount > 0 ? 'text-rose-600 dark:text-rose-300' : 'text-muted-foreground',
               )}
             >
               {formatMNT(inv.remaining_amount)}
             </div>
-            <div className="col-span-2 flex justify-end sm:col-span-3">
+            <div className="col-span-1 flex justify-end sm:col-span-2">
               <Badge className={cn('text-[11px]', invoiceStatusTone(inv.status))}>
                 {invoiceStatusLabel(inv.status)}
               </Badge>

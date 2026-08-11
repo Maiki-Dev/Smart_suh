@@ -2,7 +2,10 @@ import { requireRole } from '@/lib/permissions';
 import { getResidentApartmentContext } from '@/lib/resident/context';
 import { ResidentShell } from '@/components/layout/ResidentShell';
 import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
-import { listMaintenanceRequestsByApartment, listMaintenanceComments } from '@/lib/queries/maintenance';
+import {
+  listMaintenanceRequestsByApartment,
+  listMaintenanceCommentsForRequests,
+} from '@/lib/queries/maintenance';
 import { ResidentMaintenancePanel } from '@/components/resident/ResidentMaintenancePanel';
 
 export default async function ResidentMaintenancePage() {
@@ -11,20 +14,11 @@ export default async function ResidentMaintenancePage() {
 
   const requestsRes = apartmentId
     ? await listMaintenanceRequestsByApartment(apartmentId, { limit: 50 })
-    : { data: [], total: 0 };
+    : { data: [], total: 0, limit: 50, offset: 0 };
 
   const commentsByRequest = apartmentId
-    ? await Promise.all(
-        requestsRes.data.map(async (req) => ({
-          requestId: req.id,
-          comments: await listMaintenanceComments(req.id),
-        })),
-      )
-    : [];
-
-  const commentsMap = Object.fromEntries(
-    commentsByRequest.map(({ requestId, comments }) => [requestId, comments]),
-  );
+    ? await listMaintenanceCommentsForRequests(requestsRes.data.map((req) => req.id))
+    : {};
 
   return (
     <>
@@ -39,7 +33,7 @@ export default async function ResidentMaintenancePage() {
       >
         <ResidentMaintenancePanel
           requests={requestsRes.data}
-          commentsByRequest={commentsMap}
+          commentsByRequest={commentsByRequest}
           hasApartment={!!apartmentId}
         />
       </ResidentShell>

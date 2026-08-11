@@ -4,14 +4,16 @@ import { AdminShell } from '@/components/layout/AdminShell';
 import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { ApartmentManagement } from '@/components/admin/ApartmentManagement';
 import { listApartmentsAdminView } from '@/lib/queries/apartments';
+import { parseTablePagination } from '@/lib/admin/pagination';
 import type { ApartmentStatus } from '@/types';
 
 export default async function AdminApartmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; building?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; building?: string; status?: string; page?: string; limit?: string }>;
 }) {
   const params = await searchParams;
+  const { page, limit, offset } = parseTablePagination(params);
   const ctx = await requireAdminRole();
   const orgScope = getScopedOrganizationId(ctx);
 
@@ -20,7 +22,8 @@ export default async function AdminApartmentsPage({
   const apartmentsRes = await listApartmentsAdminView(orgScope, {
     search: searchParts || undefined,
     status: (params.status as ApartmentStatus | undefined) || undefined,
-    limit: 200,
+    limit,
+    offset,
   });
 
   return (
@@ -40,6 +43,8 @@ export default async function AdminApartmentsPage({
             status: params.status,
           }}
           total={apartmentsRes.total}
+          page={page}
+          limit={limit}
         />
       </AdminShell>
     </>

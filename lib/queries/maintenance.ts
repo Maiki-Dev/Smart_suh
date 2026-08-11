@@ -11,7 +11,7 @@ import type {
 } from '@/types';
 
 const REQ_SELECT = `
-  SELECT id, organization_id, apartment_id, created_by, title, description,
+  SELECT id, organization_id, apartment_id, created_by, assigned_to, title, description,
          category, priority, status, created_at, updated_at
     FROM maintenance_requests
 `;
@@ -20,6 +20,10 @@ const COMMENT_SELECT = `
   SELECT id, request_id, user_id, comment, created_at
     FROM maintenance_comments
 `;
+
+export type MaintenanceCommentWithAuthor = MaintenanceComment & {
+  author_name: string;
+};
 
 export async function getMaintenanceRequestById(
   id: string,
@@ -37,10 +41,7 @@ export async function listMaintenanceRequestsByApartment(
     status?: MaintenanceStatus;
   } = {},
 ): Promise<ListResult<MaintenanceRequest>> {
-  return buildMaintenanceList(
-    { type: 'apartment', value: apartmentId },
-    opts,
-  );
+  return buildMaintenanceList({ type: 'apartment', value: apartmentId }, opts);
 }
 
 export async function listMaintenanceRequestsByOrganization(
@@ -51,10 +52,7 @@ export async function listMaintenanceRequestsByOrganization(
     status?: MaintenanceStatus;
   } = {},
 ): Promise<ListResult<MaintenanceRequest>> {
-  return buildMaintenanceList(
-    { type: 'organization', value: organizationId },
-    opts,
-  );
+  return buildMaintenanceList({ type: 'organization', value: organizationId }, opts);
 }
 
 async function buildMaintenanceList(
@@ -98,9 +96,16 @@ async function buildMaintenanceList(
   }
   const where = `WHERE ${clauses.join(' AND ')}`;
 
+  const orderClause =
+    safeOrder === 'created_at'
+      ? `CASE priority WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END ASC,
+         CASE status WHEN 'OPEN' THEN 0 WHEN 'IN_PROGRESS' THEN 1 WHEN 'ON_HOLD' THEN 2 ELSE 3 END ASC,
+         created_at DESC`
+      : `"${safeOrder}" ${safeDir}`;
+
   const [dataRes, countRes] = await Promise.all([
     query<MaintenanceRequest>(
-      `${REQ_SELECT} ${where} ORDER BY "${safeOrder}" ${safeDir} LIMIT $${idx++} OFFSET $${idx++}`,
+      `${REQ_SELECT} ${where} ORDER BY ${orderClause} LIMIT $${idx++} OFFSET $${idx++}`,
       [...params, limit, offset],
     ),
     query<{ count: string }>(
@@ -121,6 +126,7 @@ export async function createMaintenanceRequest(input: {
   organization_id: string;
   apartment_id: string;
   created_by?: string | null;
+  assigned_to?: string | null;
   title: string;
   description?: string | null;
   category?: MaintenanceCategory;
@@ -132,6 +138,7 @@ export async function createMaintenanceRequest(input: {
     organization_id,
     apartment_id,
     created_by = null,
+    assigned_to = null,
     title,
     description = null,
     category = 'OTHER',
@@ -143,13 +150,13 @@ export async function createMaintenanceRequest(input: {
   const { rows } = await query<MaintenanceRequest>(
     `
       INSERT INTO maintenance_requests
-        (organization_id, apartment_id, created_by, title, description,
+        (organization_id, apartment_id, created_by, assigned_to, title, description,
          category, priority, status)
-      VALUES ($1, $2, $3, $4, $5, $6::maint_cat, $7::maint_priority, $8::maint_status)
-      RETURNING id, organization_id, apartment_id, created_by, title, description,
+      VALUES ($1, $2, $3, $4, $5, $6, $7::maint_cat, $8::maint_priority, $9::maint_status)
+      RETURNING id, organization_id, apartment_id, created_by, assigned_to, title, description,
                 category, priority, status, created_at, updated_at
     `,
-    [organization_id, apartment_id, created_by, title, description, category, priority, status],
+    [organization_id, apartment_id, created_by, assigned_to, title, description, category, priority, status],
     client,
   );
   return rows[0];
@@ -167,6 +174,7 @@ export async function updateMaintenanceRequest(
 
   const merged = {
     created_by: input.created_by ?? existing.created_by,
+    assigned_to: input.assigned_to !== undefined ? input.assigned_to : existing.assigned_to,
     title: input.title ?? existing.title,
     description: input.description ?? existing.description,
     category: input.category ?? existing.category,
@@ -177,15 +185,21 @@ export async function updateMaintenanceRequest(
   const { rows } = await query<MaintenanceRequest>(
     `
       UPDATE maintenance_requests
-         SET created_by = $1, title = $2, description = $3,
-             category = $4::maint_cat, priority = $5::maint_priority, status = $6::maint_status,
+         SET created_by = $1,
+             assigned_to = $2,
+             title = $3,
+             description = $4,
+             category = $5::maint_cat,
+             priority = $6::maint_priority,
+             status = $7::maint_status,
              updated_at = NOW()
-       WHERE id = $7
-       RETURNING id, organization_id, apartment_id, created_by, title, description,
+       WHERE id = $8
+       RETURNING id, organization_id, apartment_id, created_by, assigned_to, title, description,
                  category, priority, status, created_at, updated_at
     `,
     [
       merged.created_by,
+      merged.assigned_to,
       merged.title,
       merged.description,
       merged.category,
@@ -206,6 +220,31 @@ export interface MaintenanceAdminRow extends MaintenanceRequest {
   assigned_operator_name: string | null;
 }
 
+export async function getMaintenanceAdminRowById(
+  id: string,
+  client?: DbClient,
+): Promise<MaintenanceAdminRow | null> {
+  const { rows } = await query<MaintenanceAdminRow>(
+    `
+    SELECT mr.id, mr.organization_id, mr.apartment_id, mr.created_by, mr.assigned_to,
+           mr.title, mr.description, mr.category, mr.priority, mr.status, mr.created_at, mr.updated_at,
+           apt.apartment_number, b.name AS building_name, apt.tower,
+           TRIM(CONCAT(res.first_name, ' ', res.last_name)) AS resident_name,
+           TRIM(CONCAT(op.last_name, ' ', op.first_name)) AS assigned_operator_name
+      FROM maintenance_requests mr
+      JOIN apartments apt ON apt.id = mr.apartment_id
+      JOIN buildings b ON b.id = apt.building_id
+      LEFT JOIN residents res ON res.apartment_id = mr.apartment_id AND res.user_id = mr.created_by
+      LEFT JOIN users op ON op.id = mr.assigned_to
+     WHERE mr.id = $1
+     LIMIT 1
+    `,
+    [id],
+    client,
+  );
+  return rows[0] ?? null;
+}
+
 export async function listMaintenanceAdminView(
   organizationId: string | null,
   opts: PaginationOptions & {
@@ -213,6 +252,7 @@ export async function listMaintenanceAdminView(
     priority?: MaintenancePriority;
     status?: MaintenanceStatus;
     apartment_id?: string;
+    assigned_to?: string;
     search?: string;
   } = {},
 ): Promise<ListResult<MaintenanceAdminRow>> {
@@ -225,6 +265,7 @@ export async function listMaintenanceAdminView(
     priority,
     status,
     apartment_id,
+    assigned_to,
     search,
   } = opts;
 
@@ -257,6 +298,10 @@ export async function listMaintenanceAdminView(
     clauses.push(`mr.apartment_id = $${idx++}`);
     params.push(apartment_id);
   }
+  if (assigned_to) {
+    clauses.push(`mr.assigned_to = $${idx++}`);
+    params.push(assigned_to);
+  }
   if (search?.trim()) {
     clauses.push(`(mr.title ILIKE $${idx} OR mr.description ILIKE $${idx})`);
     params.push(`%${search.trim()}%`);
@@ -264,29 +309,26 @@ export async function listMaintenanceAdminView(
   }
 
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  const orderClause =
+    safeOrder === 'created_at'
+      ? `CASE mr.priority WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END ASC,
+         CASE mr.status WHEN 'OPEN' THEN 0 WHEN 'IN_PROGRESS' THEN 1 WHEN 'ON_HOLD' THEN 2 ELSE 3 END ASC,
+         mr.created_at DESC`
+      : `mr."${safeOrder}" ${safeDir}`;
 
   const sql = `
-    SELECT mr.id, mr.organization_id, mr.apartment_id, mr.created_by, mr.title, mr.description,
-           mr.category, mr.priority, mr.status, mr.created_at, mr.updated_at,
+    SELECT mr.id, mr.organization_id, mr.apartment_id, mr.created_by, mr.assigned_to,
+           mr.title, mr.description, mr.category, mr.priority, mr.status, mr.created_at, mr.updated_at,
            apt.apartment_number, b.name AS building_name, apt.tower,
            TRIM(CONCAT(res.first_name, ' ', res.last_name)) AS resident_name,
-           assign.assigned_operator_name
+           TRIM(CONCAT(op.last_name, ' ', op.first_name)) AS assigned_operator_name
       FROM maintenance_requests mr
       JOIN apartments apt ON apt.id = mr.apartment_id
       JOIN buildings b ON b.id = apt.building_id
       LEFT JOIN residents res ON res.apartment_id = mr.apartment_id AND res.user_id = mr.created_by
-      LEFT JOIN LATERAL (
-        SELECT TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS assigned_operator_name
-          FROM audit_logs al
-          JOIN users u ON u.id = (al.new_data->>'assigned_to')::uuid
-         WHERE al.entity_type = 'maintenance_request'
-           AND al.entity_id = mr.id
-           AND al.action = 'MAINTENANCE_ASSIGNED'
-         ORDER BY al.created_at DESC
-         LIMIT 1
-      ) assign ON TRUE
+      LEFT JOIN users op ON op.id = mr.assigned_to
       ${where}
-     ORDER BY mr."${safeOrder}" ${safeDir}
+     ORDER BY ${orderClause}
      LIMIT $${idx++} OFFSET $${idx++}
   `;
 
@@ -315,6 +357,52 @@ export async function listMaintenanceComments(
     client,
   );
   return rows;
+}
+
+export async function listMaintenanceCommentsWithAuthors(
+  requestId: string,
+  client?: DbClient,
+): Promise<MaintenanceCommentWithAuthor[]> {
+  const { rows } = await query<MaintenanceCommentWithAuthor>(
+    `
+      SELECT mc.id, mc.request_id, mc.user_id, mc.comment, mc.created_at,
+             COALESCE(TRIM(CONCAT(u.last_name, ' ', u.first_name)), 'Систем') AS author_name
+        FROM maintenance_comments mc
+        LEFT JOIN users u ON u.id = mc.user_id
+       WHERE mc.request_id = $1
+       ORDER BY mc.created_at ASC
+    `,
+    [requestId],
+    client,
+  );
+  return rows;
+}
+
+export async function listMaintenanceCommentsForRequests(
+  requestIds: string[],
+  client?: DbClient,
+): Promise<Record<string, MaintenanceCommentWithAuthor[]>> {
+  if (!requestIds.length) return {};
+
+  const { rows } = await query<MaintenanceCommentWithAuthor>(
+    `
+      SELECT mc.id, mc.request_id, mc.user_id, mc.comment, mc.created_at,
+             COALESCE(TRIM(CONCAT(u.last_name, ' ', u.first_name)), 'Систем') AS author_name
+        FROM maintenance_comments mc
+        LEFT JOIN users u ON u.id = mc.user_id
+       WHERE mc.request_id = ANY($1::uuid[])
+       ORDER BY mc.created_at ASC
+    `,
+    [requestIds],
+    client,
+  );
+
+  const grouped: Record<string, MaintenanceCommentWithAuthor[]> = {};
+  for (const row of rows) {
+    if (!grouped[row.request_id]) grouped[row.request_id] = [];
+    grouped[row.request_id].push(row);
+  }
+  return grouped;
 }
 
 export async function createMaintenanceComment(input: {

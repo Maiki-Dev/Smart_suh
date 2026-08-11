@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/erp-dialog";
 import { useActionToast } from "@/lib/hooks/use-action-toast";
 import { formatMNT, paymentMethodLabel, paymentRecordStatusLabel } from "@/lib/admin/format";
+import { PaginationFormFields, TablePagination } from "@/components/admin/TablePagination";
 import { formatDateTimeMn } from "@/lib/format/datetime";
 
 const initialState: PaymentActionState = { status: "idle" };
@@ -154,11 +155,15 @@ export function PaymentManagement({
   openInvoices,
   filters,
   total,
+  page,
+  limit,
 }: {
   payments: PaymentAdminRow[];
   openInvoices: OpenInvoiceOption[];
   filters: Filters;
   total: number;
+  page: number;
+  limit: number;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -177,6 +182,7 @@ export function PaymentManagement({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form method="get" className="grid gap-3 md:grid-cols-3">
+            <PaginationFormFields page={page} limit={limit} />
             <Input name="q" placeholder="Хайлт..." defaultValue={filters.q ?? ""} />
             <select
               name="method"
@@ -235,6 +241,7 @@ export function PaymentManagement({
               </tbody>
             </table>
           </div>
+          <TablePagination total={total} page={page} limit={limit} />
         </CardContent>
       </Card>
 
