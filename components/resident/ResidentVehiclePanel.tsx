@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, CreditCard, CheckCircle2, AlertTriangle } from "lucide-react";
 import type { GateAccessLog, Vehicle } from "@/types";
 import {
   refreshResidentGateAccessAction,
@@ -12,12 +12,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { erpSelectClassName } from "@/components/ui/erp-dialog";
 import { useActionToast } from "@/lib/hooks/use-action-toast";
 import { StatusBadge, gateAccessTone } from "@/components/admin/StatusBadge";
-import { gateAccessStatusLabel, gateActionLabel, vehicleTypeLabel } from "@/lib/admin/format";
+import {
+  gateAccessStatusLabel,
+  gateActionLabel,
+  vehicleTypeLabel,
+  formatMNT,
+} from "@/lib/admin/format";
 import { formatDateTimeMn } from "@/lib/format/datetime";
 import { GATE_RESTORED_MESSAGE } from "@/lib/gate/consecutive-unpaid";
+import { cn } from "@/lib/utils";
 
 const initialState: ResidentVehicleActionState = { status: "idle" };
 
@@ -29,12 +36,16 @@ export function ResidentVehiclePanel({
   consecutiveUnpaidMonths,
   disabledReason,
   logs,
+  totalDebt = 0,
+  paymentUrl = "#",
 }: {
   vehicle: Vehicle | null;
   gateAccess: boolean;
   consecutiveUnpaidMonths: number;
   disabledReason: string | null;
   logs: GateAccessLog[];
+  totalDebt?: number;
+  paymentUrl?: string;
 }) {
   const [state, formAction, pending] = useActionState(updateResidentVehicleAction, initialState);
   const [refreshState, refreshAction, refreshPending] = useActionState(
@@ -44,6 +55,14 @@ export function ResidentVehiclePanel({
 
   useActionToast(state, { successMessage: "Машины мэдээлэл хадгалагдлаа" });
   useActionToast(refreshState, { successMessage: "Зогсоолын эрх шалгагдлаа" });
+
+  const hasDebt = totalDebt > 0;
+  const wireHref = paymentUrl || "#";
+  const openWire = (e: React.MouseEvent) => {
+    if (!paymentUrl || paymentUrl === "#") {
+      e.preventDefault();
+    }
+  };
 
   if (!vehicle) {
     return (
@@ -88,6 +107,59 @@ export function ResidentVehiclePanel({
               Эрх шалгах
             </Button>
           </form>
+
+          <Separator className="my-1" />
+
+          <div className="rounded-lg border border-border bg-muted/30 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[11px] uppercase tracking-wider text-zinc-500">
+                Үлдэгдэл
+              </div>
+              {hasDebt ? (
+                <AlertTriangle className="size-3.5 text-rose-500 shrink-0" />
+              ) : (
+                <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
+              )}
+            </div>
+            <div
+              className={cn(
+                "mt-1 text-2xl font-semibold tabular-nums tracking-tight",
+                hasDebt && "text-rose-600 dark:text-rose-400",
+              )}
+            >
+              {formatMNT(totalDebt)}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {hasDebt
+                ? consecutiveUnpaidMonths >= 2
+                  ? "RFID эрх сэргээхэд төлбөр төлөх шаардлагатай"
+                  : "Нээлттэй нэхэмжлэлийн үлдэгдэл"
+                : "Бүх төлбөр төлөгдсөн"}
+            </p>
+            <div className="mt-3 flex flex-col gap-2">
+              <a
+                href={wireHref}
+                target="_blank"
+                rel="noreferrer"
+                onClick={openWire}
+                className={cn(
+                  "inline-flex h-9 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors",
+                  hasDebt || paymentUrl === "#"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-emerald-600 text-white hover:bg-emerald-600/90",
+                )}
+              >
+                <CreditCard className="size-4" />
+                {hasDebt ? "Төлбөр төлөх (Wire.mn)" : "Wire.mn"}
+              </a>
+              <a
+                href="/resident/payments"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+              >
+                Нэхэмжлэл үзэх
+              </a>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

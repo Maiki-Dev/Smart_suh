@@ -10,7 +10,8 @@ import { formatMNT, invoiceStatusLabel, paymentMethodLabel } from '@/lib/admin/f
 import { invoiceFeeTypeLabel } from '@/lib/fees/apartment-fees';
 import {
   formatBillingMonthMn,
-  formatDateOnlyDateTimeMn,
+  formatDateMn,
+  formatDateOnlyMn,
   formatDateTimeMn,
 } from '@/lib/format/datetime';
 import { getInvoiceById } from '@/lib/queries/invoices';
@@ -73,14 +74,14 @@ export default async function AdminInvoiceDetailPage({
                 label="Төлбөрийн сар"
                 value={formatBillingMonthMn(invoice.billing_year, invoice.billing_month)}
               />
-              <Info label="Үүссэн" value={formatDateTimeMn(invoice.created_at)} />
+              <Info label="Үүссэн" value={formatDateMn(invoice.created_at)} />
               <Info label="Төрөл" value={invoiceFeeTypeLabel(invoice.fee_type)} />
               <Info label="Нийт дүн" value={formatMNT(invoice.amount)} />
               <Info label="Төлсөн" value={formatMNT(invoice.paid_amount)} />
               <Info label="Үлдэгдэл" value={formatMNT(invoice.remaining_amount)} />
               <Info
-                label="Төлөгдөх огноо"
-                value={formatDateOnlyDateTimeMn(invoice.due_date)}
+                label="Төлөх хугацаа"
+                value={formatDateOnlyMn(invoice.due_date)}
               />
               <div className="flex flex-col gap-1">
                 <span className="text-xs uppercase tracking-wider text-zinc-500">Төлөв</span>

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/permissions';
 import { recalculateVehicleAccess } from '@/lib/gate/vehicle-access-service';
 import { getVehicleById, updateVehicle } from '@/lib/queries/vehicles';
-import { getResidentOverviewStats } from '@/lib/queries/dashboard';
+import { getApartmentIdByResidentUser } from '@/lib/queries/residents';
 import type { VehicleType } from '@/types';
 
 export type ResidentVehicleActionState = {
@@ -25,8 +25,7 @@ const updateSchema = z.object({
 });
 
 async function getResidentApartmentId(userId: string, organizationId: string) {
-  const overview = await getResidentOverviewStats(organizationId, userId);
-  return overview.apartment?.id ?? null;
+  return getApartmentIdByResidentUser(organizationId, userId);
 }
 
 export async function updateResidentVehicleAction(

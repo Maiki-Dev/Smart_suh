@@ -9,11 +9,7 @@
     "lint": "eslint",
     "db:check": "tsx scripts/db-check.mts",
     "db:migrate": "tsx scripts/db-setup.mts",
-    "db:seed": "tsx scripts/db-setup.mts --seed",
-    "db:setup": "tsx scripts/db-setup.mts --seed",
-    "test:payments": "node --import tsx --import ./scripts/preload-server-only.mts scripts/test-payments.mts",
-    "test:vehicle-access": "node --import tsx --import ./scripts/preload-server-only.mts scripts/test-vehicle-access.mts",
-    "test:phase7": "node --import tsx --import ./scripts/preload-server-only.mts scripts/test-phase7.mts"
+    "db:unseed": "tsx scripts/db-unseed.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

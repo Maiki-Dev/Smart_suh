@@ -18,7 +18,6 @@ import {
   CreditCard as CreditCardIcon,
   Calendar as CalendarIcon,
   UserPlus as UserPlusIcon,
-  FileText as FileTextIcon,
   Check as CheckIcon,
   X as XIcon,
   ChevronRight as ChevronRightIcon,
@@ -33,7 +32,7 @@ import { getResidentByEmail } from '@/lib/queries/residents';
 import { listInvoicesByApartment } from '@/lib/queries/invoices';
 import { listAnnouncementsByOrganization } from '@/lib/queries/announcements';
 import { listGateAccessLogsForApartment } from '@/lib/queries/gate_access_logs';
-import { formatBillingMonthMn, formatDateMn, formatDateTimeMn, formatDateOnlyDateTimeMn } from '@/lib/format/datetime';
+import { formatDateMn, formatDateTimeMn } from '@/lib/format/datetime';
 import { cn } from '@/lib/utils';
 import {
   formatMNT,
@@ -45,11 +44,11 @@ import {
   aggregateInvoiceTotals,
   feeBreakdownFromApartment,
   feeBreakdownFromInvoices,
-  invoiceFeeTypeLabel,
   type FeeBreakdown,
 } from '@/lib/fees/apartment-fees';
 import { FeeBreakdownPanel } from '@/components/resident/FeeBreakdownPanel';
-import type { Invoice, Announcement, GateAccessLog } from '@/types';
+import { MonthlyInvoiceList } from '@/components/resident/MonthlyInvoiceList';
+import type { Announcement, GateAccessLog } from '@/types';
 
 function resolveCurrentFees(overview: ResidentOverviewStats): FeeBreakdown | null {
   if (overview.current_month_invoices.length > 0) {
@@ -80,21 +79,6 @@ function relativeTime(iso: string): string {
   const m = Math.floor(d / 30);
   if (m < 12) return `${m} сар өмнө`;
   return `${Math.floor(m / 12)} жил өмнө`;
-}
-
-function invoiceStatusTone(status: Invoice['status']) {
-  switch (status) {
-    case 'PAID':
-      return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300';
-    case 'PARTIAL':
-      return 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300';
-    case 'PENDING':
-      return 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300';
-    case 'OVERDUE':
-      return 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300';
-    case 'CANCELLED':
-      return 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400';
-  }
 }
 
 interface VehicleRow {
@@ -191,7 +175,7 @@ export default async function ResidentDashboardPage() {
               </Link>
             </CardHeader>
             <CardContent className="pt-0">
-              <InvoiceTable data={invoices} />
+              <MonthlyInvoiceList invoices={invoices} />
             </CardContent>
           </Card>
 
@@ -379,74 +363,6 @@ function QuickLinksCard({
         })}
       </CardContent>
     </Card>
-  );
-}
-
-function InvoiceTable({ data }: { data: Invoice[] }) {
-  if (!data.length) {
-    return (
-      <EmptyState
-        icon={FileTextIcon}
-        title="Нэхэмжлэл байхгүй"
-        description="Орон сууц холбогдсоны дараа сар бүрийн нэхэмжлэл энд харагдана."
-      />
-    );
-  }
-
-  return (
-    <div className="overflow-hidden rounded-lg border border-border">
-      <div className="grid grid-cols-12 gap-2 bg-muted/40 px-3 py-2 text-[11px] font-medium text-muted-foreground sm:px-4">
-        <div className="col-span-3 sm:col-span-2">Огноо</div>
-        <div className="col-span-3 sm:col-span-2">Төрөл</div>
-        <div className="col-span-3 sm:col-span-2">Дүн</div>
-        <div className="hidden sm:col-span-2 sm:block">Төлсөн</div>
-        <div className="col-span-2 sm:col-span-2">Үлдэгдэл</div>
-        <div className="col-span-1 text-right sm:col-span-2">Төлөв</div>
-      </div>
-      <div className="divide-y divide-border">
-        {data.map((inv) => (
-          <div
-            key={inv.id}
-            className="grid grid-cols-12 items-center gap-2 px-3 py-3 text-sm sm:px-4"
-          >
-            <div className="col-span-3 sm:col-span-2">
-              <p className="font-medium tabular-nums">
-                {formatBillingMonthMn(inv.billing_year, inv.billing_month)}
-              </p>
-              <p className="text-[11px] text-muted-foreground tabular-nums">
-                {formatDateTimeMn(inv.created_at)}
-              </p>
-              {inv.due_date ? (
-                <p className="text-[11px] text-muted-foreground tabular-nums">
-                  Төлөх: {formatDateOnlyDateTimeMn(inv.due_date)}
-                </p>
-              ) : null}
-              <p className="truncate text-[11px] text-muted-foreground">#{inv.invoice_number}</p>
-            </div>
-            <div className="col-span-3 text-sm sm:col-span-2">{invoiceFeeTypeLabel(inv.fee_type)}</div>
-            <div className="col-span-3 font-medium tabular-nums sm:col-span-2">
-              {formatMNT(inv.amount)}
-            </div>
-            <div className="hidden tabular-nums text-emerald-700 dark:text-emerald-300 sm:col-span-2 sm:block">
-              {formatMNT(inv.paid_amount)}
-            </div>
-            <div
-              className={cn(
-                'col-span-2 font-medium tabular-nums sm:col-span-2',
-                inv.remaining_amount > 0 ? 'text-rose-600 dark:text-rose-300' : 'text-muted-foreground',
-              )}
-            >
-              {formatMNT(inv.remaining_amount)}
-            </div>
-            <div className="col-span-1 flex justify-end sm:col-span-2">
-              <Badge className={cn('text-[11px]', invoiceStatusTone(inv.status))}>
-                {invoiceStatusLabel(inv.status)}
-              </Badge>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 

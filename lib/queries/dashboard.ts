@@ -186,9 +186,11 @@ export interface ResidentOverviewStats {
     id: string;
     plate_number: string;
     vehicle_type: string;
+    owner_name: string | null;
     active: boolean;
     gate_access: boolean;
     rfid_number: string | null;
+    disabled_reason: string | null;
   }[];
   active_visitor_passes: number;
   open_maintenance_requests: number;
@@ -243,9 +245,11 @@ export async function getResidentOverviewStats(
                  'id', v.id,
                  'plate_number', v.plate_number,
                  'vehicle_type', v.vehicle_type,
+                 'owner_name', v.owner_name,
                  'active', v.active,
                  'gate_access', v.gate_access,
-                 'rfid_number', v.rfid_number
+                 'rfid_number', v.rfid_number,
+                 'disabled_reason', v.disabled_reason
                ) ORDER BY v.plate_number) AS vehicles
           FROM vehicles v
           JOIN user_apt ua ON v.apartment_id = ua.id

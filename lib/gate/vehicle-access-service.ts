@@ -73,7 +73,7 @@ export async function recalculateVehicleAccess(
     return null;
   }
 
-  const invoicesRes = await listInvoicesByApartment(apartmentId, { limit: 120 }, client);
+  const invoicesRes = await listInvoicesByApartment(apartmentId, { limit: RECENT_INVOICE_LIMIT }, client);
   const consecutiveUnpaidMonths = countConsecutiveUnpaidMonths(invoicesRes.data, 'PARKING');
   const shouldDisable = shouldDisableGateAccess(consecutiveUnpaidMonths);
   const nextGateAccess = !shouldDisable;
@@ -172,17 +172,22 @@ export async function recalculateVehicleAccess(
   };
 }
 
+const RECENT_INVOICE_LIMIT = 36;
+
 export async function getVehicleAccessSummary(
   apartmentId: string,
-  client?: DbClient,
+  opts?: {
+    vehicle?: Vehicle | null;
+    client?: DbClient;
+  },
 ): Promise<{
   vehicle: Vehicle | null;
   consecutiveUnpaidMonths: number;
   gateAccess: boolean;
   disabledReason: string | null;
 }> {
-  const vehicle = await getDefaultVehicleForApartment(apartmentId, client);
-  const invoicesRes = await listInvoicesByApartment(apartmentId, { limit: 120 }, client);
+  const vehicle = opts?.vehicle ?? (await getDefaultVehicleForApartment(apartmentId, opts?.client));
+  const invoicesRes = await listInvoicesByApartment(apartmentId, { limit: RECENT_INVOICE_LIMIT }, opts?.client);
   const consecutiveUnpaidMonths = countConsecutiveUnpaidMonths(invoicesRes.data, 'PARKING');
 
   return {

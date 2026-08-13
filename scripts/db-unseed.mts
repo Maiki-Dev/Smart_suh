@@ -1,4 +1,4 @@
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { config } from 'dotenv';
@@ -16,13 +16,6 @@ if (existsSync(resolve(root, '.env.local'))) {
 }
 config({ path: resolve(root, '.env') });
 
-async function runSqlFile(client: Client, filePath: string, label: string): Promise<void> {
-  const sql = await readFile(filePath, 'utf8');
-  console.log(`→ ${label}`);
-  await client.query(sql);
-  console.log(`✓ ${label}`);
-}
-
 async function main(): Promise<void> {
   const databaseUrl = assertDatabaseUrl();
   const client = new Client(getPgPoolConfig(databaseUrl));
@@ -31,17 +24,13 @@ async function main(): Promise<void> {
   await client.connect();
   console.log('✓ Холболт амжилттай\n');
 
-  const migrationsDir = join(root, 'database', 'migrations');
-  const migrationFiles = (await readdir(migrationsDir))
-    .filter((file) => file.endsWith('.sql'))
-    .sort();
-
-  for (const file of migrationFiles) {
-    await runSqlFile(client, join(migrationsDir, file), file);
-  }
+  const sql = await readFile(join(root, 'database', 'unseed.sql'), 'utf8');
+  console.log('→ unseed.sql (ABC Residence seed өгөгдөл устгах)');
+  const result = await client.query(sql);
+  console.log(`✓ Устгагдсан байгууллага: ${result.rowCount ?? 0}`);
 
   await client.end();
-  console.log('\nБэлэн. Одоо npm run dev ажиллуулаад login хуудсаар туршина уу.');
+  console.log('\nБэлэн. Seed/test өгөгдөл цэвэрлэгдлээ.');
 }
 
 main().catch((error) => {

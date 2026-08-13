@@ -18,6 +18,19 @@ function getSupabasePoolerHost(): string | null {
   );
 }
 
+function getSupabasePoolerPort(): number {
+  const fromEnv = process.env.SUPABASE_POOLER_PORT?.trim();
+  if (fromEnv) {
+    const parsed = Number(fromEnv);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return Math.floor(parsed);
+    }
+  }
+
+  // Transaction pooler — Next.js / serverless-д илүү тохиромжтой (Session 5432-оос хурдан)
+  return 6543;
+}
+
 function buildSupabaseDatabaseUrl(supabaseUrl: string, password: string): string {
   const projectRef = extractSupabaseProjectRef(supabaseUrl);
   if (!projectRef) {
@@ -28,19 +41,40 @@ function buildSupabaseDatabaseUrl(supabaseUrl: string, password: string): string
   const poolerHost = getSupabasePoolerHost();
 
   if (poolerHost) {
-    // Session pooler — IPv4 compatible (recommended for local Windows dev)
-    return `postgresql://postgres.${projectRef}:${encodedPassword}@${poolerHost}:5432/postgres`;
+    const port = getSupabasePoolerPort();
+    const base = `postgresql://postgres.${projectRef}:${encodedPassword}@${poolerHost}:${port}/postgres`;
+    // Transaction pooler-д prepared statement идэвхгүй байх ёстой
+    return port === 6543 ? `${base}?pgbouncer=true` : base;
   }
 
   // Direct connection — IPv6 only; often fails on IPv4-only networks
   return `postgresql://postgres:${encodedPassword}@db.${projectRef}.supabase.co:5432/postgres`;
 }
 
+function preferTransactionPooler(connectionString: string): string {
+  if (process.env.SUPABASE_POOLER_PORT?.trim() === '5432') {
+    return connectionString;
+  }
+  if (!isSupabaseSessionPooler(connectionString)) {
+    return connectionString;
+  }
+
+  const upgraded = connectionString.replace(
+    /pooler\.supabase\.com:5432\//i,
+    'pooler.supabase.com:6543/',
+  );
+
+  if (/[?&]pgbouncer=/i.test(upgraded)) {
+    return upgraded;
+  }
+  return upgraded.includes('?') ? `${upgraded}&pgbouncer=true` : `${upgraded}?pgbouncer=true`;
+}
+
 export function getDatabaseUrl(): string {
   const explicit =
     process.env.DATABASE_URL?.trim() ||
     process.env.SUPABASE_DATABASE_URL?.trim();
-  if (explicit) return explicit;
+  if (explicit) return preferTransactionPooler(explicit);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const dbPassword =
@@ -81,9 +115,13 @@ function resolvePoolMax(connectionString: string): number {
     }
   }
 
-  // Supabase pooler tiers share a small server-side limit (often 15 in session mode).
-  // Next.js dev/build can spawn many workers — keep the client pool tiny.
-  if (isSupabaseTransactionPooler(connectionString) || isSupabaseSessionPooler(connectionString)) {
+  // Transaction pooler: хуудас бүр Promise.all-аар олон query зэрэгцүүлдэг
+  if (isSupabaseTransactionPooler(connectionString)) {
+    return 3;
+  }
+
+  // Session pooler: server-side хязgaar бага (≈15) — client pool-ийг маш бага байлгана
+  if (isSupabaseSessionPooler(connectionString)) {
     return 1;
   }
 
@@ -97,8 +135,10 @@ export function getPgPoolConfig(connectionString: string): PoolConfig {
   return {
     connectionString,
     max: resolvePoolMax(connectionString),
-    idleTimeoutMillis: 10_000,
-    connectionTimeoutMillis: 15_000,
+    // 10s idle-д холболт тасрах → дараагийн query 1–2s хүлээнэ; dev-д урт байлгана
+    idleTimeoutMillis: 60_000,
+    connectionTimeoutMillis: 10_000,
+    keepAlive: true,
     ssl: useSsl ? { rejectUnauthorized: false } : undefined,
     ...(transactionPooler ? { options: '-c statement_cache_mode=off' } : {}),
   };

@@ -62,12 +62,12 @@ export function formatDateMnLong(value: string | Date | null | undefined): strin
   return formatDateMn(value);
 }
 
-/** Billing month as YYYY.MM.DD (first day of month). */
+/** Төлбөрийн сар — жишээ: "2026 оны 8 сар" */
 export function formatBillingMonthMn(year: number, month: number): string {
-  return `${year}.${String(month).padStart(2, '0')}.01`;
+  return `${year} оны ${month} сар`;
 }
 
-/** PostgreSQL DATE (YYYY-MM-DD) without UTC timezone shift. */
+/** PostgreSQL DATE (YYYY-MM-DD) — цаггүй, timezone shiftгүй */
 export function formatDateOnlyMn(value: string | null | undefined): string {
   if (!value) return '—';
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value));
@@ -75,9 +75,7 @@ export function formatDateOnlyMn(value: string | null | undefined): string {
   return formatDateMn(value);
 }
 
-/** DATE column shown with time at start of day (00:00). */
+/** @deprecated formatDateOnlyMn ашиглана — DATE талбарт 00:00 харуулах шаардлагагүй */
 export function formatDateOnlyDateTimeMn(value: string | null | undefined): string {
-  if (!value) return '—';
-  const formatted = formatDateOnlyMn(value);
-  return formatted === '—' ? formatted : `${formatted} 00:00`;
+  return formatDateOnlyMn(value);
 }

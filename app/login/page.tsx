@@ -189,7 +189,7 @@ export default function LoginPage({
                 </div>
               </form>
 
-              <div className="mt-6 pt-5 border-t border-zinc-100">
+              {/* <div className="mt-6 pt-5 border-t border-zinc-100">
                 <div className="space-y-1.5">
                   <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
                     Туршилтын хаягууд
@@ -201,12 +201,12 @@ export default function LoginPage({
                     <div>bat.erdeneb@example.mn · resident123</div>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
 
           <p className="text-center text-xs text-muted-foreground">
-            Smart СӨХ системд нэвтэрч, оршин сууцны удирдлагыг хялбархан хийнэ үү.
+            Smart СӨХ системд нэвтэрч, оршин сууцны удирдлагыг хялбархан хийнэ.
           </p>
         </div>
       </div>

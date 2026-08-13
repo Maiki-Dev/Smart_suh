@@ -23,11 +23,8 @@ import {
   residentStatusLabel,
 } from '@/lib/admin/format';
 import { feeBreakdownLabel, invoiceFeeTypeLabel } from '@/lib/fees/apartment-fees';
-import {
-  formatBillingMonthMn,
-  formatDateOnlyDateTimeMn,
-  formatDateTimeMn,
-} from '@/lib/format/datetime';
+import { MonthlyInvoiceList } from '@/components/resident/MonthlyInvoiceList';
+import { formatDateTimeMn } from '@/lib/format/datetime';
 import { getApartmentDetailBundle, getApartmentDeleteBlockers } from '@/lib/queries/apartments';
 import { listResidentsByApartment } from '@/lib/queries/residents';
 import { listInvoicesByApartment } from '@/lib/queries/invoices';
@@ -189,29 +186,7 @@ export default async function AdminApartmentDetailPage({
             {invoicesRes.data.length === 0 ? (
               <EmptyText text="Нэхэмжлэл байхгүй" />
             ) : (
-              <div className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
-                {invoicesRes.data.map((invoice) => (
-                  <div key={invoice.id} className="flex items-center justify-between gap-3 py-3">
-                    <div>
-                      <div className="font-medium">{invoice.invoice_number}</div>
-                      <div className="text-xs text-zinc-500">
-                        {formatBillingMonthMn(invoice.billing_year, invoice.billing_month)} ·{' '}
-                        {formatDateTimeMn(invoice.created_at)}
-                        {invoice.due_date
-                          ? ` · Төлөх: ${formatDateOnlyDateTimeMn(invoice.due_date)}`
-                          : ''}{' '}
-                        · {invoiceFeeTypeLabel(invoice.fee_type)} · {invoiceStatusLabel(invoice.status)}
-                      </div>
-                    </div>
-                    <div className="text-right tabular-nums">
-                      <div>{formatMNT(invoice.amount)}</div>
-                      <div className="text-xs text-zinc-500 mt-1">
-                        Үлдэгдэл {formatMNT(invoice.remaining_amount)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <MonthlyInvoiceList invoices={invoicesRes.data} />
             )}
           </SectionCard>
 

@@ -225,6 +225,26 @@ export async function getApartmentOwner(
   return rows[0] ?? null;
 }
 
+export async function getApartmentIdByResidentUser(
+  organizationId: string,
+  userId: string,
+  client?: DbClient,
+): Promise<string | null> {
+  const { rows } = await query<{ apartment_id: string }>(
+    `
+      SELECT apartment_id
+        FROM residents
+       WHERE organization_id = $1
+         AND user_id = $2
+         AND status = 'ACTIVE'
+       LIMIT 1
+    `,
+    [organizationId, userId],
+    client,
+  );
+  return rows[0]?.apartment_id ?? null;
+}
+
 export async function createResident(input: {
   organization_id: string;
   apartment_id: string;

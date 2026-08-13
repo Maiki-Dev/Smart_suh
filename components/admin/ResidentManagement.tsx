@@ -31,6 +31,8 @@ import {
   residentStatusTone,
 } from "@/components/admin/StatusBadge";
 import { residentStatusLabel } from "@/lib/admin/format";
+import { formatApartmentOptionLabel } from "@/lib/admin/apartment-label";
+import { ApartmentBuildingSelect } from "@/components/admin/ApartmentBuildingSelect";
 
 const initialState: ResidentActionState = { status: "idle" };
 
@@ -81,24 +83,11 @@ function ResidentFormDialog({
           </h3>
         </div>
         <div className="grid gap-4 px-5 py-4 sm:grid-cols-2">
-          <div className="sm:col-span-2 flex flex-col gap-2">
-            <Label htmlFor="apartment_id">Орон сууц</Label>
-            <select
-              id="apartment_id"
-              name="apartment_id"
-              defaultValue={resident?.apartment_id ?? defaultApartmentId ?? ""}
-              required
-              className={erpSelectClassName}
-            >
-              <option value="" disabled>
-                Сонгох...
-              </option>
-              {apartments.map((apt) => (
-                <option key={apt.id} value={apt.id}>
-                  {[apt.building_name, apt.tower, apt.apartment_number].filter(Boolean).join(" · ")}
-                </option>
-              ))}
-            </select>
+          <div className="sm:col-span-2">
+            <ApartmentBuildingSelect
+              apartments={apartments}
+              defaultApartmentId={resident?.apartment_id ?? defaultApartmentId}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="first_name">Нэр</Label>
@@ -253,7 +242,11 @@ export function ResidentManagement({
                       <td className="px-3 py-3">{resident.phone ?? "—"}</td>
                       <td className="px-3 py-3">{resident.email ?? "—"}</td>
                       <td className="px-3 py-3">
-                        {[resident.tower, resident.apartment_number].filter(Boolean).join(" · ")}
+                        {formatApartmentOptionLabel({
+                          building_name: resident.building_name,
+                          tower: resident.tower,
+                          apartment_number: resident.apartment_number,
+                        })}
                       </td>
                       <td className="px-3 py-3">{resident.building_name}</td>
                       <td className="px-3 py-3">

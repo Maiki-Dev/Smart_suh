@@ -6,8 +6,9 @@ import { getValidSessionByToken, deleteSession as deleteDbSession, touchSession,
 import { getUserById, getUserByEmail } from '@/lib/queries/users';
 import { getOrganizationById } from '@/lib/queries/organizations';
 import { AUTH_COOKIE_NAME, sessionCookieOptions, clearSessionCookieOptions, SESSION_DURATION_MS } from './cookies';
-import { verifyPassword } from './password';
+import { verifyPasswordWithUpgrade } from './password';
 import { createSession } from '@/lib/queries/sessions';
+import { updateUser } from '@/lib/queries/users';
 import type { CookieSerializeOptions } from './types-cookie';
 
 export interface AuthContext {
@@ -69,6 +70,10 @@ export async function getCurrentAuth(): Promise<AuthContext | null> {
 export async function requireAuth(): Promise<AuthContext> {
   const ctx = await getCurrentAuth();
   if (!ctx) {
+    const token = await readSessionTokenFromCookie();
+    if (token) {
+      await removeSessionCookie();
+    }
     redirect('/login');
   }
   return ctx;
@@ -93,7 +98,13 @@ export async function authenticateByCredentials(input: {
   if (!user) return { ok: false, reason: 'INVALID_CREDENTIALS' };
   if (user.status !== 'ACTIVE') return { ok: false, reason: 'USER_INACTIVE' };
 
-  const matches = await verifyPassword(password, user.password_hash);
+  const matches = await verifyPasswordWithUpgrade({
+    plaintextPassword: password,
+    passwordHash: user.password_hash,
+    upgrade: async (newHash) => {
+      await updateUser(user.id, { password_hash: newHash });
+    },
+  });
   if (!matches) return { ok: false, reason: 'INVALID_CREDENTIALS' };
 
   const expiresMs = Date.now() + SESSION_DURATION_MS;

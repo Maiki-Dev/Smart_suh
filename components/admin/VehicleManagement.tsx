@@ -31,6 +31,8 @@ import {
   gateAccessStatusLabel,
   vehicleTypeLabel,
 } from "@/lib/admin/format";
+import { formatApartmentOptionLabel } from "@/lib/admin/apartment-label";
+import { ApartmentBuildingSelect } from "@/components/admin/ApartmentBuildingSelect";
 
 const initialState: VehicleActionState = { status: "idle" };
 
@@ -83,25 +85,13 @@ function VehicleFormDialog({
           </h3>
         </div>
         <div className="grid gap-4 px-5 py-4 sm:grid-cols-2">
-          <div className="sm:col-span-2 flex flex-col gap-2">
-            <Label htmlFor="apartment_id">Орон сууц</Label>
-            <select
-              id="apartment_id"
-              name="apartment_id"
-              defaultValue={vehicle?.apartment_id ?? ""}
-              required
+          <div className="sm:col-span-2">
+            <ApartmentBuildingSelect
+              apartments={apartments}
+              defaultApartmentId={vehicle?.apartment_id}
               disabled={!!vehicle}
-              className={`${erpSelectClassName} disabled:opacity-60`}
-            >
-              <option value="" disabled>
-                Сонгох...
-              </option>
-              {apartments.map((apt) => (
-                <option key={apt.id} value={apt.id}>
-                  {[apt.building_name, apt.tower, apt.apartment_number].filter(Boolean).join(" · ")}
-                </option>
-              ))}
-            </select>
+              apartmentSelectDisabled={!!vehicle}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="plate_number">Улсын дугаар</Label>

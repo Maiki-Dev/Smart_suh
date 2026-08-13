@@ -115,3 +115,149 @@ export function aggregateInvoiceTotals(
 
   return { amount, paid_amount, remaining_amount, status };
 }
+
+export type MonthlyInvoiceGroup<T extends {
+  billing_year: number;
+  billing_month: number;
+  fee_type: InvoiceFeeType;
+  amount: number;
+  paid_amount: number;
+  remaining_amount: number;
+  status: string;
+  due_date?: string | null;
+  created_at: string;
+}> = {
+  billing_year: number;
+  billing_month: number;
+  due_date: string | null;
+  created_at: string;
+  invoices: T[];
+  totals: ReturnType<typeof aggregateInvoiceTotals>;
+  fees: FeeBreakdown;
+};
+
+/** Нэг байрны нэг сарын бүх төлбөрийг (байр, зогсоол, ус, цахилгаан) нэгтгэнэ */
+export function groupInvoicesByBillingMonth<T extends {
+  billing_year: number;
+  billing_month: number;
+  fee_type: InvoiceFeeType;
+  amount: number;
+  paid_amount: number;
+  remaining_amount: number;
+  status: string;
+  due_date?: string | null;
+  created_at: string;
+}>(invoices: T[]): MonthlyInvoiceGroup<T>[] {
+  const map = new Map<string, T[]>();
+
+  for (const invoice of invoices) {
+    const key = `${invoice.billing_year}-${invoice.billing_month}`;
+    const bucket = map.get(key) ?? [];
+    bucket.push(invoice);
+    map.set(key, bucket);
+  }
+
+  return Array.from(map.values())
+    .map((groupInvoices) => {
+      const first = groupInvoices[0];
+      const due_date = groupInvoices.find((inv) => inv.due_date)?.due_date ?? null;
+      const created_at = groupInvoices.reduce(
+        (earliest, inv) => (inv.created_at < earliest ? inv.created_at : earliest),
+        first.created_at,
+      );
+
+      return {
+        billing_year: first.billing_year,
+        billing_month: first.billing_month,
+        due_date,
+        created_at,
+        invoices: [...groupInvoices].sort((a, b) => a.fee_type.localeCompare(b.fee_type)),
+        totals: aggregateInvoiceTotals(groupInvoices),
+        fees: feeBreakdownFromInvoices(groupInvoices),
+      };
+    })
+    .sort((a, b) => {
+      if (a.billing_year !== b.billing_year) return b.billing_year - a.billing_year;
+      return b.billing_month - a.billing_month;
+    });
+}
+
+export type ApartmentMonthlyInvoiceGroup<T extends {
+  apartment_id: string;
+  apartment_number: string;
+  building_name: string;
+  tower?: string | null;
+  owner_name?: string | null;
+  billing_year: number;
+  billing_month: number;
+  fee_type: InvoiceFeeType;
+  amount: number;
+  paid_amount: number;
+  remaining_amount: number;
+  status: string;
+  due_date?: string | null;
+  created_at: string;
+}> = MonthlyInvoiceGroup<T> & {
+  apartment_id: string;
+  apartment_number: string;
+  building_name: string;
+  tower: string | null;
+  owner_name: string | null;
+};
+
+/** Admin: орон сууц + сар бүрт байр, зогсоол, ус, цахилгааны нэхэмжлэлийг нэгтгэнэ */
+export function groupInvoicesByApartmentMonth<T extends {
+  apartment_id: string;
+  apartment_number: string;
+  building_name: string;
+  tower?: string | null;
+  owner_name?: string | null;
+  billing_year: number;
+  billing_month: number;
+  fee_type: InvoiceFeeType;
+  amount: number;
+  paid_amount: number;
+  remaining_amount: number;
+  status: string;
+  due_date?: string | null;
+  created_at: string;
+}>(invoices: T[]): ApartmentMonthlyInvoiceGroup<T>[] {
+  const map = new Map<string, T[]>();
+
+  for (const invoice of invoices) {
+    const key = `${invoice.apartment_id}-${invoice.billing_year}-${invoice.billing_month}`;
+    const bucket = map.get(key) ?? [];
+    bucket.push(invoice);
+    map.set(key, bucket);
+  }
+
+  return Array.from(map.values())
+    .map((groupInvoices) => {
+      const first = groupInvoices[0];
+      const due_date = groupInvoices.find((inv) => inv.due_date)?.due_date ?? null;
+      const created_at = groupInvoices.reduce(
+        (earliest, inv) => (inv.created_at < earliest ? inv.created_at : earliest),
+        first.created_at,
+      );
+
+      return {
+        apartment_id: first.apartment_id,
+        apartment_number: first.apartment_number,
+        building_name: first.building_name,
+        tower: first.tower ?? null,
+        owner_name: first.owner_name ?? null,
+        billing_year: first.billing_year,
+        billing_month: first.billing_month,
+        due_date,
+        created_at,
+        invoices: [...groupInvoices].sort((a, b) => a.fee_type.localeCompare(b.fee_type)),
+        totals: aggregateInvoiceTotals(groupInvoices),
+        fees: feeBreakdownFromInvoices(groupInvoices),
+      };
+    })
+    .sort((a, b) => {
+      if (a.billing_year !== b.billing_year) return b.billing_year - a.billing_year;
+      if (a.billing_month !== b.billing_month) return b.billing_month - a.billing_month;
+      return a.apartment_number.localeCompare(b.apartment_number, 'mn', { numeric: true });
+    });
+}

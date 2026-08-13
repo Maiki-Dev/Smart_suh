@@ -19,10 +19,6 @@ function redirectToLogin(request: NextRequest): NextResponse {
   return NextResponse.redirect(loginUrl);
 }
 
-function redirectToDefaultLanding(request: NextRequest): NextResponse {
-  return NextResponse.redirect(new URL(ADMIN_PREFIX, request.url));
-}
-
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
@@ -33,17 +29,15 @@ export function proxy(request: NextRequest): NextResponse {
 
   const hasSession = hasSessionCookie(request);
 
+  // Cookie байгаа гэж session хүчинтэй гэсэн үг биш — page.tsx / requireAuth шалгана.
   if (isRoot) {
-    if (hasSession) {
-      return redirectToDefaultLanding(request);
+    if (!hasSession) {
+      return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
     }
-    return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+    return NextResponse.next();
   }
 
   if (isLogin) {
-    if (hasSession) {
-      return redirectToDefaultLanding(request);
-    }
     return NextResponse.next();
   }
 

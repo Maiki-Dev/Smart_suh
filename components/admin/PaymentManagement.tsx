@@ -48,16 +48,11 @@ function PaymentFormDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [state, formAction, pending] = useActionState(recordPaymentAction, initialState);
   const [selectedInvoice, setSelectedInvoice] = useState(openInvoices[0]?.id ?? "");
-  const selected = openInvoices.find((inv) => inv.id === selectedInvoice);
   const [amount, setAmount] = useState(() => String(openInvoices[0]?.remaining_amount ?? ""));
 
   useEffect(() => {
     dialogRef.current?.showModal();
   }, []);
-
-  useEffect(() => {
-    setAmount(String(selected?.remaining_amount ?? ""));
-  }, [selectedInvoice, selected?.remaining_amount]);
 
   useActionToast(state, {
     onSuccess: () => {
@@ -84,7 +79,12 @@ function PaymentFormDialog({
               id="invoice_id"
               name="invoice_id"
               value={selectedInvoice}
-              onChange={(e) => setSelectedInvoice(e.target.value)}
+              onChange={(e) => {
+                const id = e.target.value;
+                setSelectedInvoice(id);
+                const inv = openInvoices.find((item) => item.id === id);
+                setAmount(String(inv?.remaining_amount ?? ""));
+              }}
               required
               className={erpSelectClassName}
             >
