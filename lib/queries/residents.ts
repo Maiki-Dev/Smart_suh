@@ -36,6 +36,18 @@ export async function getResidentById(
   return rows[0] ?? null;
 }
 
+export async function getResidentByUserId(
+  userId: string,
+  client?: DbClient,
+): Promise<Resident | null> {
+  const { rows } = await query<Resident>(
+    `${SELECT_SQL} WHERE user_id = $1 LIMIT 1`,
+    [userId],
+    client,
+  );
+  return rows[0] ?? null;
+}
+
 export async function listResidentsByApartment(
   apartmentId: string,
   opts: PaginationOptions = {},

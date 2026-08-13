@@ -132,7 +132,7 @@ export default async function ResidentDashboardPage() {
         unreadNotifications={overview.unread_notifications}
         activeSegment=""
         pageTitle="Нүүр хуудас"
-        pageSubtitle={`Сайн байна уу, ${ctx.user.first_name}. Төлбөр, машин, зарлалын тойм.`}
+        pageSubtitle={`Сайн байна уу, ${ctx.user.first_name}. Бүх төлбөр болон хэрэглээг хянах шийдэл.`}
       >
         {setupReason ? (
           <ResidentSetupBanner reason={setupReason} />

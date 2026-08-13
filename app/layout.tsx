@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -27,11 +28,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var s=localStorage.getItem("theme");var d=s?s==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark");else document.documentElement.classList.remove("dark");}catch(e){}})();`,
-          }}
-        />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`(function(){try{var s=localStorage.getItem("theme");var d=s?s==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark");else document.documentElement.classList.remove("dark");}catch(e){}})();`}
+        </Script>
       </head>
       <body className="min-h-full h-full flex flex-col overflow-x-hidden font-sans">
         <TooltipProvider>

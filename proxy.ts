@@ -5,6 +5,7 @@ import { AUTH_COOKIE_NAME } from '@/lib/auth/cookies';
 const ADMIN_PREFIX = '/admin';
 const RESIDENT_PREFIX = '/resident';
 const LOGIN_PATH = '/login';
+const CHANGE_PASSWORD_PATH = '/change-password';
 
 function hasSessionCookie(request: NextRequest): boolean {
   return request.cookies.has(AUTH_COOKIE_NAME);
@@ -23,6 +24,8 @@ export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
   const isLogin = pathname === LOGIN_PATH || pathname.startsWith('/login/');
+  const isChangePassword =
+    pathname === CHANGE_PASSWORD_PATH || pathname.startsWith(CHANGE_PASSWORD_PATH + '/');
   const isAdminRoute = pathname === ADMIN_PREFIX || pathname.startsWith(ADMIN_PREFIX + '/');
   const isResidentRoute = pathname === RESIDENT_PREFIX || pathname.startsWith(RESIDENT_PREFIX + '/');
   const isRoot = pathname === '/';
@@ -41,6 +44,14 @@ export function proxy(request: NextRequest): NextResponse {
     return NextResponse.next();
   }
 
+  if (isChangePassword && !hasSession) {
+    return redirectToLogin(request);
+  }
+
+  if (isChangePassword) {
+    return NextResponse.next();
+  }
+
   const isProtected = isAdminRoute || isResidentRoute;
   if (isProtected && !hasSession) {
     return redirectToLogin(request);
@@ -53,6 +64,7 @@ export const config = {
   matcher: [
     '/',
     '/login/:path*',
+    '/change-password/:path*',
     '/admin/:path*',
     '/resident/:path*',
   ],

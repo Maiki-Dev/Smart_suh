@@ -67,7 +67,9 @@ export async function getCurrentAuth(): Promise<AuthContext | null> {
   return { session, user: { ...user, organization } };
 }
 
-export async function requireAuth(): Promise<AuthContext> {
+export async function requireAuth(options?: {
+  skipPasswordChangeRedirect?: boolean;
+}): Promise<AuthContext> {
   const ctx = await getCurrentAuth();
   if (!ctx) {
     const token = await readSessionTokenFromCookie();
@@ -75,6 +77,9 @@ export async function requireAuth(): Promise<AuthContext> {
       await removeSessionCookie();
     }
     redirect('/login');
+  }
+  if (ctx.user.must_change_password && !options?.skipPasswordChangeRedirect) {
+    redirect('/change-password');
   }
   return ctx;
 }

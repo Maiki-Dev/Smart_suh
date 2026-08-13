@@ -10,7 +10,7 @@ import type {
 
 const SELECT_SQL = `
   SELECT id, organization_id, email, password_hash, first_name, last_name,
-         phone, role, status, created_at, updated_at
+         phone, role, status, must_change_password, created_at, updated_at
     FROM users
 `;
 
@@ -73,6 +73,7 @@ export async function createUser(input: {
   phone?: string | null;
   role?: UserRole;
   status?: UserStatus;
+  must_change_password?: boolean;
   client?: DbClient;
 }): Promise<User> {
   const {
@@ -84,18 +85,19 @@ export async function createUser(input: {
     phone = null,
     role = 'RESIDENT',
     status = 'ACTIVE',
+    must_change_password = false,
     client,
   } = input;
 
   const { rows } = await query<User>(
     `
       INSERT INTO users (organization_id, email, password_hash, first_name,
-                         last_name, phone, role, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7::user_role, $8::user_status)
+                         last_name, phone, role, status, must_change_password)
+      VALUES ($1, $2, $3, $4, $5, $6, $7::user_role, $8::user_status, $9)
       RETURNING id, organization_id, email, password_hash, first_name, last_name,
-                 phone, role, status, created_at, updated_at
+                 phone, role, status, must_change_password, created_at, updated_at
     `,
-    [organization_id, email, password_hash, first_name, last_name, phone, role, status],
+    [organization_id, email, password_hash, first_name, last_name, phone, role, status, must_change_password],
     client,
   );
   return rows[0];
@@ -116,6 +118,7 @@ export async function updateUser(
     phone: input.phone ?? existing.phone,
     role: input.role ?? existing.role,
     status: input.status ?? existing.status,
+    must_change_password: input.must_change_password ?? existing.must_change_password,
   };
 
   const { rows } = await query<User>(
@@ -127,10 +130,11 @@ export async function updateUser(
              last_name = $4,
              phone = $5,
              role = $6::user_role,
-             status = $7::user_status
-       WHERE id = $8
+             status = $7::user_status,
+             must_change_password = $8
+       WHERE id = $9
        RETURNING id, organization_id, email, password_hash, first_name, last_name,
-                  phone, role, status, created_at, updated_at
+                  phone, role, status, must_change_password, created_at, updated_at
     `,
     [
       merged.email,
@@ -140,6 +144,7 @@ export async function updateUser(
       merged.phone,
       merged.role,
       merged.status,
+      merged.must_change_password,
       id,
     ],
   );

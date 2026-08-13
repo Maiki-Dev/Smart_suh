@@ -72,7 +72,12 @@ export async function loginAction(
   }
 
   const landing = getDefaultLandingPathForRole(result.user.role);
-  const redirectTo = from && from.startsWith('/') ? from : landing;
+  const redirectTo =
+    result.user.must_change_password
+      ? '/change-password'
+      : from && from.startsWith('/') && from !== '/change-password'
+        ? from
+        : landing;
   redirect(redirectTo);
 }
 

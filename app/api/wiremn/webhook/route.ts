@@ -223,7 +223,11 @@ export async function POST(req: Request): Promise<NextResponse> {
     );
   }
 
-  const idempotencyKey = extracted.transactionId ?? payload.id ?? randomUUID();
+  const idempotencyKey =
+    extracted.transactionId ??
+    (typeof extracted.metadata?.id === 'string' ? extracted.metadata.id : null) ??
+    payload.id ??
+    randomUUID();
 
   const existing = idempotencyKey ? await getPaymentByWireTransactionId(idempotencyKey) : null;
   if (existing) {

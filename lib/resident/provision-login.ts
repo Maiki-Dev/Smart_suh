@@ -30,6 +30,7 @@ export async function createResidentLoginAccount(input: {
     phone: input.phone ?? null,
     role: 'RESIDENT',
     status: 'ACTIVE',
+    must_change_password: true,
     client: input.client,
   });
   return user.id;

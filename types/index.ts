@@ -78,6 +78,7 @@ export interface User {
   phone: string | null;
   role: UserRole;
   status: UserStatus;
+  must_change_password: boolean;
   created_at: Timestamp;
   updated_at: Timestamp;
 }

@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { randomUUID } from 'crypto';
+import { buildWireSuccessRedirectUrl } from '@/lib/wiremn/sync-payment-intent';
 
 export const WIRE_MN_API_BASE = 'https://api.wire.mn/v1';
 
@@ -134,7 +135,8 @@ async function createCheckoutPayment(args: {
   reference?: string;
   apartmentId?: string;
   residentUserId?: string;
-  successRedirect?: string;
+  /** Query string-гүй base URL — pi param checkout үүсэхэд нэмэгдэнэ */
+  successRedirectBase?: string;
   failRedirect?: string;
   metadata?: Record<string, unknown>;
   feeTypes?: string[];
@@ -181,7 +183,9 @@ async function createCheckoutPayment(args: {
     '/checkout/sessions',
     {
       payment_intent: intentRes.data.id,
-      ...(args.successRedirect ? { success_url: args.successRedirect } : {}),
+      ...(args.successRedirectBase
+        ? { success_url: buildWireSuccessRedirectUrl(args.successRedirectBase, intentRes.data.id) }
+        : {}),
       ...(args.failRedirect ? { cancel_url: args.failRedirect } : {}),
     },
     `cs-${intentRes.data.id}`,
@@ -210,7 +214,7 @@ export async function resolvePaymentUrlAsync(
   const successPath = args.successRedirectPath ?? '/resident/payments';
   const failPath = args.failRedirectPath ?? '/resident/payments';
 
-  const successRedirect = base ? `${base}${successPath}?status=success&source=wiremn` : undefined;
+  const successRedirectBase = base ? `${base}${successPath}` : undefined;
   const failRedirect = base ? `${base}${failPath}?status=failed&source=wiremn` : undefined;
 
   const amount = args.fallbackAmount ?? 0;
@@ -222,7 +226,7 @@ export async function resolvePaymentUrlAsync(
       reference: args.reference,
       apartmentId: args.apartmentId,
       residentUserId: args.residentUserId,
-      successRedirect,
+      successRedirectBase,
       failRedirect,
       metadata: args.metadata,
       feeTypes: args.feeTypes,

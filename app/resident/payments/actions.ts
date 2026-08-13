@@ -10,6 +10,7 @@ import {
   sumRemainingForFeeTypes,
 } from '@/lib/fees/apartment-fees';
 import { resolvePaymentUrlAsync } from '@/lib/wiremn/service';
+import { syncWirePaymentIntent } from '@/lib/wiremn/sync-payment-intent';
 import type { InvoiceFeeType } from '@/types';
 
 export type ResidentWirePaymentState =
@@ -78,4 +79,38 @@ export async function createResidentWirePaymentAction(
   }
 
   return { ok: true, url: payRes.url };
+}
+
+export async function syncResidentWirePaymentAction(
+  paymentIntentId: string,
+): Promise<
+  | { ok: true; status: 'applied' | 'already_recorded' }
+  | { ok: true; status: 'pending'; wireStatus: string }
+  | { ok: false; message: string }
+> {
+  const ctx = await requireRole(['RESIDENT']);
+  const overview = await getResidentOverviewStats(ctx.user.organization_id, ctx.user.id);
+  const aptId = overview.apartment?.id;
+  if (!aptId) {
+    return { ok: false, message: 'Орон сууц холбогдоогүй.' };
+  }
+
+  const result = await syncWirePaymentIntent(paymentIntentId, {
+    expectedApartmentId: aptId,
+    expectedUserId: ctx.user.id,
+  });
+
+  switch (result.status) {
+    case 'applied':
+    case 'already_recorded':
+      return { ok: true, status: result.status };
+    case 'pending':
+      return { ok: true, status: 'pending', wireStatus: result.wireStatus };
+    case 'forbidden':
+      return { ok: false, message: 'Энэ төлбөрийг бүртгэх эрхгүй.' };
+    case 'not_found':
+      return { ok: false, message: 'Төлбөрийн мэдээлэл олдсонгүй.' };
+    default:
+      return { ok: false, message: 'Төлбөр бүртгэхэд алдаа гарлаа.' };
+  }
 }

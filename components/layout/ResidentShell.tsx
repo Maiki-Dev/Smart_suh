@@ -7,6 +7,7 @@ import {
   Bell as BellIcon,
   Sun as SunIcon,
   Moon as MoonIcon,
+  ChevronRight,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -75,17 +76,12 @@ export function ResidentShell({
               <p className="text-sm font-semibold leading-tight">{apartmentLabel}</p>
               <p className="mt-0.5 truncate text-xs text-muted-foreground">{orgName}</p>
             </div>
-            <div className="mb-2 flex items-center gap-2.5 px-1">
-              <Avatar size="sm">
-                <AvatarFallback className="bg-muted text-xs font-medium text-muted-foreground">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium leading-tight">{fullName || initials}</p>
-                <p className="truncate text-xs text-muted-foreground">{ctx.user.email}</p>
-              </div>
-            </div>
+            <ResidentProfileCard
+              initials={initials}
+              fullName={fullName}
+              email={ctx.user.email}
+              active={activeSegment === "profile"}
+            />
             <form action={logoutAction}>
               <button
                 type="submit"
@@ -123,9 +119,15 @@ export function ResidentShell({
                 <Badge variant="secondary" className="font-normal">
                   {apartmentLabel}
                 </Badge>
-                <Avatar size="sm">
-                  <AvatarFallback className="bg-muted text-xs font-medium">{initials}</AvatarFallback>
-                </Avatar>
+                <a
+                  href="/resident/profile"
+                  className="group flex items-center gap-1.5 rounded-full p-0.5 ring-offset-background transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Профайл"
+                >
+                  <Avatar size="sm" className="transition-transform group-hover:scale-105">
+                    <AvatarFallback className="bg-muted text-xs font-medium">{initials}</AvatarFallback>
+                  </Avatar>
+                </a>
               </div>
               {headerRight}
             </div>
@@ -134,6 +136,7 @@ export function ResidentShell({
           <MobileResidentNav
             initials={initials}
             fullName={fullName}
+            email={ctx.user.email}
             orgName={orgName}
             apartmentLabel={apartmentLabel}
             notifCount={notifCount}
@@ -250,6 +253,56 @@ function ResidentNavLink({
   );
 }
 
+function ResidentProfileCard({
+  initials,
+  fullName,
+  email,
+  active = false,
+  onNavigate,
+  className,
+}: {
+  initials: string;
+  fullName: string;
+  email: string;
+  active?: boolean;
+  onNavigate?: () => void;
+  className?: string;
+}) {
+  return (
+    <a
+      href="/resident/profile"
+      onClick={onNavigate}
+      className={cn(
+        "group mb-2 flex cursor-pointer items-center gap-2.5 rounded-lg border px-2 py-2.5 transition-all",
+        "hover:border-sidebar-border hover:bg-sidebar-accent hover:shadow-sm",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
+        active
+          ? "border-sidebar-border bg-sidebar-accent shadow-sm"
+          : "border-transparent bg-muted/30",
+        className,
+      )}
+      aria-label="Профайл руу орох"
+    >
+      <Avatar size="sm" className="shrink-0 ring-2 ring-background transition-all group-hover:ring-primary/25">
+        <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">{initials}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium leading-tight transition-colors group-hover:text-sidebar-accent-foreground">
+          {fullName || initials}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">{email}</p>
+      </div>
+      <ChevronRight
+        className={cn(
+          "size-4 shrink-0 text-muted-foreground transition-all",
+          active ? "opacity-100 text-primary" : "opacity-40 group-hover:translate-x-0.5 group-hover:opacity-100",
+        )}
+        aria-hidden
+      />
+    </a>
+  );
+}
+
 function ThemeToggle() {
   return (
     <button
@@ -300,6 +353,7 @@ function MobileNavButton() {
 function MobileResidentNav({
   initials,
   fullName,
+  email,
   orgName,
   apartmentLabel,
   notifCount,
@@ -307,6 +361,7 @@ function MobileResidentNav({
 }: {
   initials: string;
   fullName: string;
+  email: string;
   orgName: string;
   apartmentLabel: string;
   notifCount: number;
@@ -327,10 +382,9 @@ function MobileResidentNav({
       />
       <aside className="fixed bottom-0 left-0 top-14 z-30 flex w-64 -translate-x-full flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-150 peer-checked:translate-x-0 md:hidden">
         <div className="border-b border-sidebar-border px-4 py-3">
-          <p className="truncate text-sm font-medium">{fullName || initials}</p>
-          <p className="truncate text-xs text-muted-foreground">
-            {apartmentLabel} · {orgName}
-          </p>
+          <p className="text-xs text-muted-foreground">Орон сууц</p>
+          <p className="truncate text-sm font-semibold">{apartmentLabel}</p>
+          <p className="truncate text-xs text-muted-foreground">{orgName}</p>
         </div>
         <ResidentSidebarNav
           activeSegment={activeSegment}
@@ -339,6 +393,13 @@ function MobileResidentNav({
           onNavigate={closeNav}
         />
         <div className="border-t border-sidebar-border p-3">
+          <ResidentProfileCard
+            initials={initials}
+            fullName={fullName}
+            email={email}
+            active={activeSegment === "profile"}
+            onNavigate={closeNav}
+          />
           <form action={logoutAction}>
             <button
               type="submit"
