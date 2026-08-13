@@ -51,8 +51,10 @@ async function wirePost<T>(
   path: string,
   body: Record<string, unknown>,
   idempotencyKey: string,
-): Promise<T | null> {
-  if (!WIRE_MN_API_KEY) return null;
+): Promise<{ data: T | null; errorCode: string | null; errorMessage: string | null }> {
+  if (!WIRE_MN_API_KEY) {
+    return { data: null, errorCode: 'missing_api_key', errorMessage: null };
+  }
 
   try {
     const res = await fetch(`${WIRE_MN_API_BASE}${path}`, {
@@ -66,15 +68,27 @@ async function wirePost<T>(
       cache: 'no-store',
     });
 
-    if (!res.ok) return null;
-
-    const json = (await res.json()) as T | { data?: T };
-    if (json && typeof json === 'object' && 'data' in json && json.data) {
-      return json.data as T;
+    const text = await res.text();
+    if (!res.ok) {
+      try {
+        const err = JSON.parse(text) as { error?: { code?: string; message?: string } };
+        return {
+          data: null,
+          errorCode: err.error?.code ?? `http_${res.status}`,
+          errorMessage: err.error?.message ?? text.slice(0, 200),
+        };
+      } catch {
+        return { data: null, errorCode: `http_${res.status}`, errorMessage: text.slice(0, 200) };
+      }
     }
-    return json as T;
+
+    const json = text ? (JSON.parse(text) as T | { data?: T }) : ({} as T);
+    if (json && typeof json === 'object' && 'data' in json && json.data) {
+      return { data: json.data as T, errorCode: null, errorMessage: null };
+    }
+    return { data: json as T, errorCode: null, errorMessage: null };
   } catch {
-    return null;
+    return { data: null, errorCode: 'network_error', errorMessage: null };
   }
 }
 
@@ -89,6 +103,30 @@ interface WireCheckoutSession {
   payment_intent?: string;
 }
 
+export interface ResolvePaymentUrlArgs {
+  fallbackAmount?: number;
+  description?: string;
+  reference?: string;
+  apartmentId?: string;
+  residentUserId?: string;
+  successRedirectPath?: string;
+  failRedirectPath?: string;
+  metadata?: Record<string, unknown>;
+  preferDynamic?: boolean;
+}
+
+export interface ResolvePaymentUrlResult {
+  url: string;
+  isDynamic: boolean;
+  linkId?: string | null;
+  unavailable?: boolean;
+  wireError?: string | null;
+}
+
+function getStaticPaymentLinkUrl(): string {
+  return (process.env.WIRE_MN_PAYMENT_LINK ?? WIRE_MN_PAYMENT_LINK).trim();
+}
+
 async function createCheckoutPayment(args: {
   amount: number;
   description?: string;
@@ -98,7 +136,7 @@ async function createCheckoutPayment(args: {
   successRedirect?: string;
   failRedirect?: string;
   metadata?: Record<string, unknown>;
-}): Promise<{ url: string; paymentIntentId: string } | null> {
+}): Promise<{ url: string; paymentIntentId: string } | { error: string } | null> {
   if (!WIRE_MN_API_KEY || args.amount <= 0) return null;
 
   const metadata: Record<string, unknown> = { ...(args.metadata ?? {}) };
@@ -121,83 +159,45 @@ async function createCheckoutPayment(args: {
     ? `pi-${args.reference}-${Date.now()}`
     : `pi-${randomUUID()}`;
 
-  const intent = await wirePost<WirePaymentIntent>(
+  const intentRes = await wirePost<WirePaymentIntent>(
     '/payment_intents',
     intentBody,
     intentKey,
   );
-  if (!intent?.id) return null;
+  if (!intentRes.data?.id) {
+    if (intentRes.errorCode === 'settlement_account_required') {
+      return {
+        error:
+          'Wire dashboard → Данс (Accounts) хэсэгт банкны дансаа сонгоно уу.',
+      };
+    }
+    return intentRes.errorMessage ? { error: intentRes.errorMessage } : null;
+  }
 
-  const sessionBody: Record<string, unknown> = {
-    payment_intent: intent.id,
-  };
-  if (args.successRedirect) sessionBody.success_url = args.successRedirect;
-  if (args.failRedirect) sessionBody.cancel_url = args.failRedirect;
-
-  const session = await wirePost<WireCheckoutSession>(
+  const sessionRes = await wirePost<WireCheckoutSession>(
     '/checkout/sessions',
-    sessionBody,
-    `cs-${intent.id}`,
+    {
+      payment_intent: intentRes.data.id,
+      ...(args.successRedirect ? { success_url: args.successRedirect } : {}),
+      ...(args.failRedirect ? { cancel_url: args.failRedirect } : {}),
+    },
+    `cs-${intentRes.data.id}`,
   );
-  if (!session?.url) return null;
+  if (!sessionRes.data?.url) {
+    return sessionRes.errorMessage ? { error: sessionRes.errorMessage } : null;
+  }
 
-  return { url: session.url, paymentIntentId: intent.id };
-}
-
-export interface ResolvePaymentUrlArgs {
-  fallbackAmount?: number;
-  description?: string;
-  reference?: string;
-  apartmentId?: string;
-  residentUserId?: string;
-  successRedirectPath?: string;
-  failRedirectPath?: string;
-  metadata?: Record<string, unknown>;
-  preferDynamic?: boolean;
-}
-
-export interface ResolvePaymentUrlResult {
-  url: string;
-  isDynamic: boolean;
-  linkId?: string | null;
-  unavailable?: boolean;
+  return { url: sessionRes.data.url, paymentIntentId: intentRes.data.id };
 }
 
 export function resolvePaymentUrl(args: ResolvePaymentUrlArgs): ResolvePaymentUrlResult {
-  const baseUrl = WIRE_MN_PAYMENT_LINK?.trim();
-  const base = publicBaseUrl();
-
-  const successPath = args.successRedirectPath ?? '/resident/payments';
-  const failPath = args.failRedirectPath ?? '/resident/payments';
-
-  const successWithQuery = base
-    ? `${base}${successPath}?status=success&source=wiremn`
-    : successPath;
-  const failWithQuery = base
-    ? `${base}${failPath}?status=failed&source=wiremn`
-    : failPath;
-
+  const baseUrl = getStaticPaymentLinkUrl();
   if (!baseUrl || !isValidStaticWirePaymentLink(baseUrl)) {
     return { url: '#', isDynamic: false, linkId: null, unavailable: true };
   }
 
-  const staticQuery = new URLSearchParams();
-  if (args.fallbackAmount != null && args.fallbackAmount > 0) {
-    staticQuery.set('amount', String(args.fallbackAmount));
-  }
-  if (args.description) staticQuery.set('description', args.description);
-  if (args.reference) staticQuery.set('reference', args.reference);
-  if (args.apartmentId) staticQuery.set('apartment_id', args.apartmentId);
-  if (args.residentUserId) staticQuery.set('user_id', args.residentUserId);
-  if (base) {
-    staticQuery.set('success_redirect_url', successWithQuery);
-    staticQuery.set('fail_redirect_url', failWithQuery);
-  }
-  const staticQs = staticQuery.toString();
-  const separator = baseUrl.includes('?') ? '&' : '?';
-  const fallbackUrl = staticQs ? `${baseUrl}${separator}${staticQs}` : baseUrl;
-
-  return { url: fallbackUrl, isDynamic: false };
+  // Wire static линк — dashboard-оос тохируулсан дүн/тохиргоо; query param хэрэггүй
+  return { url: baseUrl, isDynamic: false };
 }
 
 export async function resolvePaymentUrlAsync(
@@ -223,11 +223,19 @@ export async function resolvePaymentUrlAsync(
       failRedirect,
       metadata: args.metadata,
     });
-    if (checkout?.url) {
+    if (checkout && 'url' in checkout) {
       return {
         url: checkout.url,
         isDynamic: true,
         linkId: checkout.paymentIntentId,
+      };
+    }
+    if (checkout && 'error' in checkout) {
+      const staticResult = resolvePaymentUrl(args);
+      return {
+        ...staticResult,
+        wireError: checkout.error,
+        unavailable: staticResult.unavailable,
       };
     }
   }

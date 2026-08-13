@@ -118,9 +118,14 @@ export default async function ResidentPaymentsPage({
                 <CreditCard className="size-4" />
                 {payRes.unavailable ? 'Wire.mn тохиргоо дутуу' : 'Төлбөр төлөх (Wire.mn)'}
               </a>
+              {payRes.wireError ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                  {payRes.wireError}
+                </p>
+              ) : null}
               {payRes.unavailable ? (
                 <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                  Vercel дээр WIRE_MN_API_KEY (sk_live_...) эсвэл WIRE_MN_PAYMENT_LINK
+                  Vercel дээр WIRE_MN_API_KEY эсвэл WIRE_MN_PAYMENT_LINK
                   (https://pay.wire.mn/link/slug) тохируулна уу.
                 </p>
               ) : null}
