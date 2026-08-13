@@ -1,13 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import {
-  Building2,
   LogOut,
   Bell as BellIcon,
   Sun as SunIcon,
   Moon as MoonIcon,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -16,12 +17,23 @@ import { cn } from "@/lib/utils";
 import type { AuthContext } from "@/lib/auth/session";
 import {
   RESIDENT_BOTTOM_NAV_ITEMS,
+  RESIDENT_FEATURE_NAV,
   RESIDENT_NAV_GROUPS,
+  RESIDENT_PRIMARY_NAV,
+  findResidentNavGroup,
+  isResidentNavItemActive,
   type ResidentNavGroup,
   type ResidentNavItem,
 } from "@/components/layout/resident-nav";
+import { SidebarBrandHeader } from "@/components/layout/SidebarBrandHeader";
 
-export { RESIDENT_NAV_ITEMS, RESIDENT_NAV_GROUPS, RESIDENT_BOTTOM_NAV_ITEMS } from "@/components/layout/resident-nav";
+export {
+  RESIDENT_NAV_ITEMS,
+  RESIDENT_NAV_GROUPS,
+  RESIDENT_BOTTOM_NAV_ITEMS,
+  RESIDENT_PRIMARY_NAV,
+  RESIDENT_FEATURE_NAV,
+} from "@/components/layout/resident-nav";
 export type { ResidentNavItem } from "@/components/layout/resident-nav";
 
 export interface ResidentShellProps {
@@ -54,15 +66,7 @@ export function ResidentShell({
     <div className="h-dvh overflow-hidden bg-background text-foreground">
       <div className="flex h-full">
         <aside className="hidden md:flex w-60 lg:w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-          <div className="flex h-14 items-center gap-2.5 border-b border-sidebar-border px-4 shrink-0">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Building2 className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold leading-tight">Smart СӨХ</p>
-              <p className="truncate text-xs text-muted-foreground">Оршин суугч</p>
-            </div>
-          </div>
+          <SidebarBrandHeader subtitle={apartmentLabel} href="/resident" />
 
           <ResidentSidebarNav
             activeSegment={activeSegment}
@@ -71,15 +75,10 @@ export function ResidentShell({
           />
 
           <div className="shrink-0 border-t border-sidebar-border p-3">
-            <div className="mb-3 rounded-md border border-sidebar-border bg-muted/40 px-3 py-2.5">
-              <p className="text-xs text-muted-foreground">Орон сууц</p>
-              <p className="text-sm font-semibold leading-tight">{apartmentLabel}</p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">{orgName}</p>
-            </div>
-            <ResidentProfileCard
+            <ResidentUserCard
               initials={initials}
               fullName={fullName}
-              email={ctx.user.email}
+              subtitle={orgName}
               active={activeSegment === "profile"}
             />
             <form action={logoutAction}>
@@ -136,9 +135,8 @@ export function ResidentShell({
           <MobileResidentNav
             initials={initials}
             fullName={fullName}
-            email={ctx.user.email}
-            orgName={orgName}
             apartmentLabel={apartmentLabel}
+            orgName={orgName}
             notifCount={notifCount}
             activeSegment={activeSegment}
           />
@@ -171,15 +169,66 @@ function ResidentSidebarNav({
   className?: string;
   onNavigate?: () => void;
 }) {
+  const activeGroup = findResidentNavGroup(activeSegment);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const group of RESIDENT_NAV_GROUPS) {
+      initial[group.id] = group.id === activeGroup?.id;
+    }
+    return initial;
+  });
+
+  useEffect(() => {
+    if (activeGroup) {
+      setOpenGroups((prev) => ({ ...prev, [activeGroup.id]: true }));
+    }
+  }, [activeGroup?.id]);
+
+  const toggleGroup = (id: string) => {
+    setOpenGroups((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   return (
     <nav className={cn("overflow-y-auto overscroll-contain px-2", className)}>
-      <div className="space-y-4">
+      <ul className="space-y-0.5">
+        {RESIDENT_PRIMARY_NAV.map((item) => (
+          <ResidentNavLink
+            key={item.segment || "home"}
+            item={item}
+            active={isResidentNavItemActive(item, activeSegment)}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </ul>
+
+      <div className="my-3 space-y-1">
+        <p className="px-2 text-[10px] font-semibold uppercase tracking-wider text-primary">
+          Шинэ боломж
+        </p>
+        <ul className="space-y-0.5 rounded-lg border border-primary/15 bg-primary/[0.04] p-1">
+          {RESIDENT_FEATURE_NAV.map((item) => (
+            <ResidentNavLink
+              key={item.segment}
+              item={item}
+              active={isResidentNavItemActive(item, activeSegment)}
+              onNavigate={onNavigate}
+              featured
+            />
+          ))}
+        </ul>
+      </div>
+
+      <div className="my-3 border-t border-sidebar-border/60" />
+
+      <div className="space-y-1">
         {RESIDENT_NAV_GROUPS.map((group) => (
-          <ResidentNavGroupBlock
+          <CollapsibleNavGroup
             key={group.id}
             group={group}
             activeSegment={activeSegment}
             notifCount={notifCount}
+            open={openGroups[group.id] ?? false}
+            onToggle={() => toggleGroup(group.id)}
             onNavigate={onNavigate}
           />
         ))}
@@ -188,45 +237,20 @@ function ResidentSidebarNav({
   );
 }
 
-function ResidentNavGroupBlock({
-  group,
-  activeSegment,
-  notifCount,
-  onNavigate,
-}: {
-  group: ResidentNavGroup;
-  activeSegment: string;
-  notifCount: number;
-  onNavigate?: () => void;
-}) {
-  return (
-    <div>
-      <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">{group.label}</p>
-      <ul className="space-y-0.5">
-        {group.items.map((item) => (
-          <ResidentNavLink
-            key={item.segment}
-            item={item}
-            active={item.segment === activeSegment}
-            notifCount={item.segment === "notifications" ? notifCount : 0}
-            onNavigate={onNavigate}
-          />
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 function ResidentNavLink({
   item,
   active,
-  notifCount,
+  notifCount = 0,
   onNavigate,
+  compact,
+  featured,
 }: {
   item: ResidentNavItem;
   active: boolean;
-  notifCount: number;
+  notifCount?: number;
   onNavigate?: () => void;
+  compact?: boolean;
+  featured?: boolean;
 }) {
   const Icon = item.icon;
   return (
@@ -235,16 +259,29 @@ function ResidentNavLink({
         href={item.href}
         onClick={onNavigate}
         className={cn(
-          "flex h-9 items-center gap-2.5 rounded-md px-2 text-sm transition-colors",
+          "flex items-center gap-2.5 rounded-md px-2 text-sm transition-colors",
+          compact ? "h-8" : "h-9",
+          featured && !active && "hover:bg-primary/10",
           active
-            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+            ? featured
+              ? "bg-primary/15 font-medium text-foreground ring-1 ring-primary/20"
+              : "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
             : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
         )}
       >
-        <Icon className={cn("size-4 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
+        <Icon
+          className={cn(
+            "size-4 shrink-0",
+            active ? "text-primary" : "text-muted-foreground",
+          )}
+        />
         <span className="truncate">{item.label}</span>
-        {notifCount > 0 ? (
-          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-white">
+        {item.badge === "new" ? (
+          <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-primary-foreground">
+            Шинэ
+          </span>
+        ) : notifCount > 0 ? (
+          <span className="ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-white">
             {notifCount > 99 ? "99+" : notifCount}
           </span>
         ) : null}
@@ -253,17 +290,68 @@ function ResidentNavLink({
   );
 }
 
-function ResidentProfileCard({
+function CollapsibleNavGroup({
+  group,
+  activeSegment,
+  notifCount,
+  open,
+  onToggle,
+  onNavigate,
+}: {
+  group: ResidentNavGroup;
+  activeSegment: string;
+  notifCount: number;
+  open: boolean;
+  onToggle: () => void;
+  onNavigate?: () => void;
+}) {
+  const hasActive = group.items.some((item) => isResidentNavItemActive(item, activeSegment));
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={cn(
+          "flex h-8 w-full items-center gap-2 rounded-md px-2 text-xs font-medium transition-colors",
+          hasActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <ChevronDown
+          className={cn("size-3.5 shrink-0 transition-transform", open ? "rotate-0" : "-rotate-90")}
+        />
+        <span className="flex-1 truncate text-left">{group.label}</span>
+        <span className="text-[10px] tabular-nums text-muted-foreground">{group.items.length}</span>
+      </button>
+      {open ? (
+        <ul className="mt-0.5 space-y-0.5 border-l border-sidebar-border/60 ml-3 pl-1.5">
+          {group.items.map((item) => (
+            <ResidentNavLink
+              key={item.segment}
+              item={item}
+              active={isResidentNavItemActive(item, activeSegment)}
+              notifCount={item.segment === "notifications" ? notifCount : 0}
+              onNavigate={onNavigate}
+              compact
+            />
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function ResidentUserCard({
   initials,
   fullName,
-  email,
+  subtitle,
   active = false,
   onNavigate,
   className,
 }: {
   initials: string;
   fullName: string;
-  email: string;
+  subtitle: string;
   active?: boolean;
   onNavigate?: () => void;
   className?: string;
@@ -290,7 +378,7 @@ function ResidentProfileCard({
         <p className="truncate text-sm font-medium leading-tight transition-colors group-hover:text-sidebar-accent-foreground">
           {fullName || initials}
         </p>
-        <p className="truncate text-xs text-muted-foreground">{email}</p>
+        <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
       </div>
       <ChevronRight
         className={cn(
@@ -353,17 +441,15 @@ function MobileNavButton() {
 function MobileResidentNav({
   initials,
   fullName,
-  email,
-  orgName,
   apartmentLabel,
+  orgName,
   notifCount,
   activeSegment,
 }: {
   initials: string;
   fullName: string;
-  email: string;
-  orgName: string;
   apartmentLabel: string;
+  orgName: string;
   notifCount: number;
   activeSegment: string;
 }) {
@@ -382,9 +468,8 @@ function MobileResidentNav({
       />
       <aside className="fixed bottom-0 left-0 top-14 z-30 flex w-64 -translate-x-full flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-150 peer-checked:translate-x-0 md:hidden">
         <div className="border-b border-sidebar-border px-4 py-3">
-          <p className="text-xs text-muted-foreground">Орон сууц</p>
-          <p className="truncate text-sm font-semibold">{apartmentLabel}</p>
-          <p className="truncate text-xs text-muted-foreground">{orgName}</p>
+          <p className="truncate text-sm font-medium">{fullName || initials}</p>
+          <p className="truncate text-xs text-muted-foreground">{apartmentLabel}</p>
         </div>
         <ResidentSidebarNav
           activeSegment={activeSegment}
@@ -393,10 +478,10 @@ function MobileResidentNav({
           onNavigate={closeNav}
         />
         <div className="border-t border-sidebar-border p-3">
-          <ResidentProfileCard
+          <ResidentUserCard
             initials={initials}
             fullName={fullName}
-            email={email}
+            subtitle={orgName}
             active={activeSegment === "profile"}
             onNavigate={closeNav}
           />
@@ -426,7 +511,7 @@ function MobileBottomNav({
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background md:hidden">
       <div className="mx-auto grid h-16 max-w-lg grid-cols-5">
         {RESIDENT_BOTTOM_NAV_ITEMS.map((item) => {
-          const active = item.segment === activeSegment;
+          const active = isResidentNavItemActive(item, activeSegment);
           const Icon = item.icon;
           const badge = item.segment === "notifications" ? notifCount : 0;
           return (

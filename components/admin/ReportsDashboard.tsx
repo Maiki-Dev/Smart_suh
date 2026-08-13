@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMNT, maintenanceCategoryLabel, paymentMethodLabel } from "@/lib/admin/format";
+import { FinanceTabs } from "@/components/admin/FinanceTabs";
 import { Download } from "lucide-react";
 
 type Filters = {
@@ -82,6 +83,7 @@ export function ReportsDashboard({
 
   return (
     <div className="flex flex-col gap-6">
+      <FinanceTabs active="reports" />
       <Card>
         <CardHeader>
           <CardTitle>Шүүлт</CardTitle>

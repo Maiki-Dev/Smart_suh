@@ -12,7 +12,7 @@ import type {
 
 const REQ_SELECT = `
   SELECT id, organization_id, apartment_id, created_by, assigned_to, title, description,
-         category, priority, status, created_at, updated_at
+         category, priority, status, incident_id, detected_issue_type, created_at, updated_at
     FROM maintenance_requests
 `;
 
@@ -154,7 +154,7 @@ export async function createMaintenanceRequest(input: {
          category, priority, status)
       VALUES ($1, $2, $3, $4, $5, $6, $7::maint_cat, $8::maint_priority, $9::maint_status)
       RETURNING id, organization_id, apartment_id, created_by, assigned_to, title, description,
-                category, priority, status, created_at, updated_at
+                category, priority, status, incident_id, detected_issue_type, created_at, updated_at
     `,
     [organization_id, apartment_id, created_by, assigned_to, title, description, category, priority, status],
     client,

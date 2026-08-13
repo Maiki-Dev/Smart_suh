@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import { requireAdminRole } from '@/lib/permissions';
 import { assertOrganizationAccess } from '@/lib/admin/org-scope';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { MaintenanceDetail } from '@/components/admin/MaintenanceDetail';
 import {
   getMaintenanceRequestById,
@@ -56,8 +55,6 @@ export default async function AdminMaintenanceDetailPage({
   );
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="maintenance"
@@ -87,6 +84,5 @@ export default async function AdminMaintenanceDetailPage({
           }))}
         />
       </AdminShell>
-    </>
   );
 }

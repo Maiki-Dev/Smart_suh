@@ -5,7 +5,7 @@ export type FeeBreakdown = {
   electricity_fee: number;
 };
 
-export type InvoiceFeeType = 'APARTMENT' | 'PARKING' | 'WATER' | 'ELECTRICITY';
+export type InvoiceFeeType = 'APARTMENT' | 'PARKING' | 'WATER' | 'ELECTRICITY' | 'COMMUNITY';
 
 export const INVOICE_FEE_TYPES: InvoiceFeeType[] = [
   'APARTMENT',
@@ -23,7 +23,7 @@ export const FEE_BREAKDOWN_KEYS = [
 
 export type FeeBreakdownKey = (typeof FEE_BREAKDOWN_KEYS)[number];
 
-export const FEE_TYPE_TO_KEY: Record<InvoiceFeeType, FeeBreakdownKey> = {
+export const FEE_TYPE_TO_KEY: Record<Exclude<InvoiceFeeType, 'COMMUNITY'>, FeeBreakdownKey> = {
   APARTMENT: 'apartment_fee',
   PARKING: 'parking_fee',
   WATER: 'water_fee',
@@ -42,6 +42,7 @@ export const FEE_TYPE_SUFFIX: Record<InvoiceFeeType, string> = {
   PARKING: 'PRK',
   WATER: 'WTR',
   ELECTRICITY: 'ELR',
+  COMMUNITY: 'COM',
 };
 
 export function sumFeeBreakdown(fees: FeeBreakdown): number {
@@ -64,6 +65,7 @@ export function feeBreakdownLabel(key: FeeBreakdownKey): string {
 }
 
 export function invoiceFeeTypeLabel(feeType: InvoiceFeeType): string {
+  if (feeType === 'COMMUNITY') return 'Нийгмийн хувь нэмэр';
   return feeBreakdownLabel(FEE_TYPE_TO_KEY[feeType]);
 }
 
@@ -76,11 +78,16 @@ export function normalizeFeeBreakdown(input: Partial<FeeBreakdown> | null | unde
   };
 }
 
+export function feeBreakdownAmount(fees: FeeBreakdown, feeType: InvoiceFeeType): number {
+  if (feeType === 'COMMUNITY') return 0;
+  return fees[FEE_TYPE_TO_KEY[feeType]];
+}
+
 export function feeAmountFromApartment(
   apartment: FeeBreakdown,
   feeType: InvoiceFeeType,
 ): number {
-  return Number(apartment[FEE_TYPE_TO_KEY[feeType]] ?? 0);
+  return feeBreakdownAmount(apartment, feeType);
 }
 
 export function feeBreakdownFromInvoices(
@@ -88,6 +95,7 @@ export function feeBreakdownFromInvoices(
 ): FeeBreakdown {
   const fees = normalizeFeeBreakdown(null);
   for (const invoice of invoices) {
+    if (invoice.fee_type === 'COMMUNITY') continue;
     fees[FEE_TYPE_TO_KEY[invoice.fee_type]] += Number(invoice.amount ?? 0);
   }
   return fees;
@@ -99,6 +107,7 @@ export function remainingFeeBreakdownFromInvoices(
   const fees = normalizeFeeBreakdown(null);
   for (const invoice of invoices) {
     if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') continue;
+    if (invoice.fee_type === 'COMMUNITY') continue;
     const remaining = Number(invoice.remaining_amount ?? 0);
     if (remaining <= 0) continue;
     fees[FEE_TYPE_TO_KEY[invoice.fee_type]] += remaining;
@@ -111,7 +120,10 @@ export function feeBreakdownFromApartment(apartment: FeeBreakdown): FeeBreakdown
 }
 
 export function sumRemainingForFeeTypes(fees: FeeBreakdown, feeTypes: InvoiceFeeType[]): number {
-  return feeTypes.reduce((sum, feeType) => sum + fees[FEE_TYPE_TO_KEY[feeType]], 0);
+  return feeTypes.reduce((sum, feeType) => {
+    if (feeType === 'COMMUNITY') return sum;
+    return sum + fees[FEE_TYPE_TO_KEY[feeType]];
+  }, 0);
 }
 
 export function aggregateInvoiceTotals(

@@ -1,7 +1,6 @@
 import { requireAdminRole } from '@/lib/permissions';
 import { getScopedOrganizationId } from '@/lib/admin/org-scope';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { ApartmentManagement } from '@/components/admin/ApartmentManagement';
 import { listApartmentsAdminView } from '@/lib/queries/apartments';
 import { parseTablePagination } from '@/lib/admin/pagination';
@@ -27,13 +26,11 @@ export default async function AdminApartmentsPage({
   });
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="apartments"
         pageTitle="Орон сууц"
-        pageSubtitle="Орон сууцны бүртгэл, хайлт, шүүлт"
+        pageSubtitle="Орон сууц болон оршин суугчийн бүртгэл"
       >
         <ApartmentManagement
           apartments={apartmentsRes.data}
@@ -47,6 +44,5 @@ export default async function AdminApartmentsPage({
           limit={limit}
         />
       </AdminShell>
-    </>
   );
 }

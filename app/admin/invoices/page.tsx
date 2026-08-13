@@ -1,7 +1,6 @@
 import { requireAdminRole } from '@/lib/permissions';
 import { getScopedOrganizationId } from '@/lib/admin/org-scope';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { InvoiceManagement } from '@/components/admin/InvoiceManagement';
 import { listApartmentsAdminView } from '@/lib/queries/apartments';
 import { listInvoicesAdminView } from '@/lib/queries/invoices';
@@ -40,13 +39,11 @@ export default async function AdminInvoicesPage({
   ]);
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="invoices"
-        pageTitle="Нэхэмжлэл"
-        pageSubtitle="Сарын нэхэмжлэл, төлбөрийн төлөв"
+        pageTitle="Санхүү"
+        pageSubtitle="Төлбөр, нэхэмжлэл, тайлан"
       >
         <InvoiceManagement
           invoices={invoicesRes.data}
@@ -63,6 +60,5 @@ export default async function AdminInvoicesPage({
           limit={limit}
         />
       </AdminShell>
-    </>
   );
 }

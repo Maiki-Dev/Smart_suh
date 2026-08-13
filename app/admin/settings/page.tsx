@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import { requireAdminRole } from '@/lib/permissions';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { SettingsPanel } from '@/components/admin/SettingsPanel';
 import { loadSettingsPageData } from '@/app/admin/settings/actions';
 
@@ -16,8 +15,6 @@ export default async function AdminSettingsPage() {
   const { password_hash: _passwordHash, organization: _organization, ...safeUser } = ctx.user;
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="settings"
@@ -31,6 +28,5 @@ export default async function AdminSettingsPage() {
           canManageOrganization={canManageOrganization}
         />
       </AdminShell>
-    </>
   );
 }

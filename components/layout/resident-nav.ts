@@ -7,6 +7,7 @@ import {
   Wrench as WrenchIcon,
   Megaphone as MegaphoneIcon,
   Bell as BellIcon,
+  Vote as VoteIcon,
 } from 'lucide-react';
 
 export interface ResidentNavItem {
@@ -14,6 +15,8 @@ export interface ResidentNavItem {
   href: string;
   icon: LucideIcon;
   segment: string;
+  badge?: 'new';
+  activeSegments?: string[];
 }
 
 export interface ResidentNavGroup {
@@ -22,37 +25,58 @@ export interface ResidentNavGroup {
   items: ResidentNavItem[];
 }
 
+export const RESIDENT_PRIMARY_NAV: ResidentNavItem[] = [
+  { label: 'Нүүр', href: '/resident', icon: HomeIcon, segment: '' },
+  { label: 'Төлбөр', href: '/resident/payments', icon: CreditCardIcon, segment: 'payments' },
+  { label: 'Засвар', href: '/resident/maintenance', icon: WrenchIcon, segment: 'maintenance' },
+  { label: 'Зарлал', href: '/resident/announcements', icon: MegaphoneIcon, segment: 'announcements' },
+];
+
+export const RESIDENT_FEATURE_NAV: ResidentNavItem[] = [
+  {
+    label: 'Хамтын шийдвэр',
+    href: '/resident/community',
+    icon: VoteIcon,
+    segment: 'community',
+    badge: 'new',
+  },
+];
+
 export const RESIDENT_NAV_GROUPS: ResidentNavGroup[] = [
   {
-    id: 'overview',
-    label: 'Ерөнхий',
-    items: [{ label: 'Нүүр', href: '/resident', icon: HomeIcon, segment: '' }],
-  },
-  {
-    id: 'services',
-    label: 'Миний үйлчилгээ',
+    id: 'more',
+    label: 'Бусад',
     items: [
-      { label: 'Төлбөр', href: '/resident/payments', icon: CreditCardIcon, segment: 'payments' },
       { label: 'Машин', href: '/resident/vehicle', icon: CarIcon, segment: 'vehicle' },
       { label: 'Зочин', href: '/resident/visitors', icon: UserPlusIcon, segment: 'visitors' },
-      { label: 'Засвар', href: '/resident/maintenance', icon: WrenchIcon, segment: 'maintenance' },
-    ],
-  },
-  {
-    id: 'info',
-    label: 'Мэдээлэл',
-    items: [
-      { label: 'Зарлал', href: '/resident/announcements', icon: MegaphoneIcon, segment: 'announcements' },
       { label: 'Мэдэгдэл', href: '/resident/notifications', icon: BellIcon, segment: 'notifications' },
     ],
   },
 ];
 
-export const RESIDENT_NAV_ITEMS: ResidentNavItem[] = RESIDENT_NAV_GROUPS.flatMap((g) => g.items);
+/** @deprecated Use RESIDENT_PRIMARY_NAV + groups */
+export const RESIDENT_NAV_ITEMS: ResidentNavItem[] = [
+  ...RESIDENT_PRIMARY_NAV,
+  ...RESIDENT_FEATURE_NAV,
+  ...RESIDENT_NAV_GROUPS.flatMap((g) => g.items),
+];
 
 /** Bottom bar: most-used pages on mobile */
 export const RESIDENT_BOTTOM_NAV_ITEMS: ResidentNavItem[] = [
-  RESIDENT_NAV_ITEMS[0],
-  ...RESIDENT_NAV_GROUPS[1].items.slice(0, 3),
-  RESIDENT_NAV_GROUPS[2].items[1],
+  RESIDENT_PRIMARY_NAV[0],
+  RESIDENT_PRIMARY_NAV[1],
+  RESIDENT_NAV_GROUPS[0].items[0],
+  RESIDENT_NAV_GROUPS[0].items[1],
+  RESIDENT_NAV_GROUPS[0].items[2],
 ];
+
+export function isResidentNavItemActive(item: ResidentNavItem, segment: string): boolean {
+  if (item.activeSegments?.includes(segment)) return true;
+  return item.segment === segment;
+}
+
+export function findResidentNavGroup(segment: string): ResidentNavGroup | undefined {
+  return RESIDENT_NAV_GROUPS.find((group) =>
+    group.items.some((item) => isResidentNavItemActive(item, segment)),
+  );
+}

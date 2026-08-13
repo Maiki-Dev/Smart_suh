@@ -76,7 +76,9 @@ export function ResidentMaintenancePanel({
   const [commentState, commentAction, commentPending] = useActionState(addCommentAction, initialState);
   const [closeState, closeAction, closePending] = useActionState(closeMaintenanceAction, initialState);
 
-  useActionToast(createState, { successMessage: "Засварын хүсэлт илгээгдлээ" });
+  useActionToast(createState, {
+    successMessage: "Засварын хүсэлт илгээгдлээ",
+  });
   useActionToast(commentState, { successMessage: "Сэтгэгдэл нэмэгдлээ" });
   useActionToast(closeState, { successMessage: "Хүсэлт хаагдлаа" });
 
@@ -104,6 +106,15 @@ export function ResidentMaintenancePanel({
           <CardDescription>Асуудлын товч мэдээлэл оруулна</CardDescription>
         </CardHeader>
         <CardContent>
+          {createState.status === "success" && createState.incidentHint ? (
+            <div className="mb-4 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+              <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium">Similar issue detected</p>
+                <p className="mt-0.5 text-amber-800 dark:text-amber-200">{createState.incidentHint}</p>
+              </div>
+            </div>
+          ) : null}
           <form action={createAction} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="title">Гарчиг</Label>

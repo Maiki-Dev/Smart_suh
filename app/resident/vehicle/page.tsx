@@ -1,6 +1,5 @@
 import { requireRole } from '@/lib/permissions';
 import { ResidentShell } from '@/components/layout/ResidentShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { getResidentOverviewStats } from '@/lib/queries/dashboard';
 import { getVehicleAccessSummary } from '@/lib/gate/vehicle-access-service';
 import { listGateAccessLogsForApartment } from '@/lib/queries/gate_access_logs';
@@ -45,8 +44,6 @@ export default async function ResidentVehiclePage() {
   });
 
   return (
-    <>
-      <ThemeInitScript />
       <ResidentShell
         ctx={ctx}
         apartmentLabel={apartmentLabel}
@@ -65,6 +62,5 @@ export default async function ResidentVehiclePage() {
           paymentUrl={payRes.url}
         />
       </ResidentShell>
-    </>
   );
 }

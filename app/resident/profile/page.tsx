@@ -1,7 +1,6 @@
 import { requireRole } from '@/lib/permissions';
 import { getResidentOverviewStats } from '@/lib/queries/dashboard';
 import { ResidentShell } from '@/components/layout/ResidentShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { ResidentProfilePanel } from '@/components/resident/ResidentProfilePanel';
 
 export default async function ResidentProfilePage({
@@ -21,8 +20,6 @@ export default async function ResidentProfilePage({
   const { password_hash: _passwordHash, ...publicUser } = ctx.user;
 
   return (
-    <>
-      <ThemeInitScript />
       <ResidentShell
         ctx={ctx}
         apartmentLabel={apartmentLabel}
@@ -37,6 +34,5 @@ export default async function ResidentProfilePage({
           initialTab={initialTab}
         />
       </ResidentShell>
-    </>
   );
 }

@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { requireAdminRole } from '@/lib/permissions';
 import { assertOrganizationAccess } from '@/lib/admin/org-scope';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -58,8 +57,6 @@ export default async function AdminApartmentDetailPage({
   const hasOwner = !!detail.owner || residentsRes.data.some((r) => r.is_owner);
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="apartments"
@@ -220,7 +217,6 @@ export default async function AdminApartmentDetailPage({
           deleteBlockers={deleteBlockers}
         />
       </AdminShell>
-    </>
   );
 }
 

@@ -14,6 +14,9 @@ import { erpSelectClassName } from "@/components/ui/erp-dialog";
 import { syncGateAccessAction } from "@/app/admin/gate-access/actions";
 import { notifyActionResult } from "@/lib/hooks/use-action-toast";
 import { PaginationFormFields, TablePagination } from "@/components/admin/TablePagination";
+import { ParkingTabs } from "@/components/admin/ParkingTabs";
+import { AdminPrimaryAction, AdminSectionToolbar } from "@/components/admin/AdminSectionToolbar";
+import { cn } from "@/lib/utils";
 
 export function GateAccessManagement({
   logs,
@@ -48,26 +51,21 @@ export function GateAccessManagement({
 
   return (
     <div className="flex flex-col gap-6">
+      <AdminSectionToolbar
+        tabs={<ParkingTabs active="gate-access" />}
+        action={
+          <AdminPrimaryAction type="button" onClick={handleSync} disabled={busy}>
+            <RefreshCw className={cn("size-4", busy && "animate-spin")} />
+            {busy ? "Шалгаж байна..." : "Эрх шинэчлэх"}
+          </AdminPrimaryAction>
+        }
+      />
       <Card>
-        <CardHeader className="gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle>Зогсоолын эрх шинэчлэх</CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Бүх машины төлбөрийн төлөвийг шалгаж, 2 сар дараалан төлөгдөөгүй бол RFID эрхийг автоматаар хаана.
-              Cron ажиллаагүй үед энд дарж туршина.
-            </p>
-          </div>
-          <Button type="button" onClick={handleSync} disabled={busy}>
-            <RefreshCw className={`size-4 ${busy ? "animate-spin" : ""}`} />
-            {busy ? "Шалгаж байна..." : "Бүх машин шинэчлэх"}
-          </Button>
-        </CardHeader>
-      </Card>
-
-      <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle>Зогсоолын түүх</CardTitle>
-          <p className="mt-1 text-sm text-muted-foreground">Нийт {total} бичлэг</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Нийт {total} бичлэг · 2 сар дараалан төлөгдөөгүй бол RFID эрх автоматаар хаагдана
+          </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form method="get" className="grid gap-3 lg:grid-cols-4">

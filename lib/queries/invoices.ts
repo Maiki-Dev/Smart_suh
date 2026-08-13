@@ -13,7 +13,7 @@ const INVOICE_RETURNING = `
   id, organization_id, apartment_id, invoice_number,
   billing_year, billing_month, fee_type, amount,
   paid_amount, remaining_amount,
-  due_date, status, created_at, updated_at
+  due_date, status, community_proposal_id, created_at, updated_at
 `;
 
 export interface InvoiceAdminRow extends Invoice {

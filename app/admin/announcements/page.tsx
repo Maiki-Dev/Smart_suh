@@ -1,7 +1,6 @@
 import { requireAdminRole } from '@/lib/permissions';
 import { getScopedOrganizationId } from '@/lib/admin/org-scope';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { AnnouncementManagement } from '@/components/admin/AnnouncementManagement';
 import { listAnnouncementsByOrganization } from '@/lib/queries/announcements';
 import { parseTablePagination } from '@/lib/admin/pagination';
@@ -25,8 +24,6 @@ export default async function AdminAnnouncementsPage({
   });
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="announcements"
@@ -40,6 +37,5 @@ export default async function AdminAnnouncementsPage({
           limit={limit}
         />
       </AdminShell>
-    </>
   );
 }

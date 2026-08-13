@@ -1,7 +1,6 @@
 import { requireAdminRole } from '@/lib/permissions';
 import { getScopedOrganizationId } from '@/lib/admin/org-scope';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { ReportsDashboard } from '@/components/admin/ReportsDashboard';
 import { listBuildingsByOrganization } from '@/lib/queries/buildings';
 import { listApartmentsAdminView } from '@/lib/queries/apartments';
@@ -56,13 +55,11 @@ export default async function AdminReportsPage({
   ].sort();
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="reports"
-        pageTitle="Тайлан"
-        pageSubtitle="Санхүү, төлбөр, машин, засвар, оршин суугчийн тайлан"
+        pageTitle="Санхүү"
+        pageSubtitle="Төлбөр, нэхэмжлэл, тайлан"
       >
         <ReportsDashboard
           financial={financial}
@@ -80,6 +77,5 @@ export default async function AdminReportsPage({
           }}
         />
       </AdminShell>
-    </>
   );
 }

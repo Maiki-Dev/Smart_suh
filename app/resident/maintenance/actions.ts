@@ -11,13 +11,17 @@ import {
   getMaintenanceRequestById,
   updateMaintenanceRequest,
 } from '@/lib/queries/maintenance';
+import { getApartmentById } from '@/lib/queries/apartments';
+import { recordBuildingEvent } from '@/lib/queries/digital-twin';
 import { notifyMaintenanceStaff } from '@/lib/maintenance/maintenance-service';
+import { processNewMaintenanceIssue } from '@/lib/incidents/detector';
 import type { MaintenanceCategory, MaintenancePriority } from '@/types';
 
 export type ResidentMaintenanceActionState = {
   status: 'idle' | 'success' | 'error';
   message?: string;
   fieldErrors?: Record<string, string[] | undefined>;
+  incidentHint?: string | null;
 };
 
 const categories = ['STRUCTURAL', 'PLUMBING', 'ELECTRICAL', 'HVAC', 'CLEANING', 'OTHER'] as const;
@@ -89,14 +93,36 @@ export async function createMaintenanceRequestAction(
       },
     });
 
+    const apt = await getApartmentById(apartmentId);
+    if (apt) {
+      await recordBuildingEvent({
+        organization_id: ctx.user.organization_id,
+        building_id: apt.building_id,
+        apartment_id: apartmentId,
+        maintenance_id: request.id,
+        event_type: 'MAINTENANCE_CREATED',
+        title: request.title,
+        description: 'Засварын хүсэлт бүртгэгдлээ',
+        source: 'MAINTENANCE',
+      });
+    }
+
     await notifyMaintenanceStaff(
       ctx.user.organization_id,
       'Шинэ засварын хүсэлт',
       `${ctx.user.last_name} ${ctx.user.first_name}: "${request.title}"`,
     );
 
+    const detection = await processNewMaintenanceIssue(request.id, ctx.user.id);
+
     revalidateResidentMaintenance();
-    return { status: 'success', message: 'Засварын хүсэлт бүртгэгдлээ' };
+    revalidatePath('/admin/incidents');
+    revalidatePath('/admin/digital-twin');
+    return {
+      status: 'success',
+      message: 'Засварын хүсэлт бүртгэгдлээ',
+      incidentHint: detection.resident_hint,
+    };
   } catch (error) {
     return {
       status: 'error',

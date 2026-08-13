@@ -1,6 +1,5 @@
 import { requireRole } from '@/lib/permissions';
 import { ResidentShell } from '@/components/layout/ResidentShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatMNT, paymentMethodLabel, paymentRecordStatusLabel } from '@/lib/admin/format';
 import { getResidentOverviewStats } from '@/lib/queries/dashboard';
@@ -60,8 +59,6 @@ export default async function ResidentPaymentsPage({
     : '—';
 
   return (
-    <>
-      <ThemeInitScript />
       <ResidentShell
         ctx={ctx}
         apartmentLabel={apartmentLabel}
@@ -167,6 +164,5 @@ export default async function ResidentPaymentsPage({
           </Card>
         </div>
       </ResidentShell>
-    </>
   );
 }

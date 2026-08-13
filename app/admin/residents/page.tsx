@@ -1,7 +1,6 @@
 import { requireAdminRole } from '@/lib/permissions';
 import { getScopedOrganizationId } from '@/lib/admin/org-scope';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { ResidentManagement } from '@/components/admin/ResidentManagement';
 import { listApartmentsAdminView } from '@/lib/queries/apartments';
 import { listResidentsAdminView } from '@/lib/queries/residents';
@@ -29,13 +28,11 @@ export default async function AdminResidentsPage({
   ]);
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="residents"
-        pageTitle="Оршин суугч"
-        pageSubtitle="Оршин суугчийн бүртгэл, хайлт, шүүлт"
+        pageTitle="Орон сууц"
+        pageSubtitle="Орон сууц болон оршин суугчийн бүртгэл"
       >
         <ResidentManagement
           residents={residentsRes.data}
@@ -51,6 +48,5 @@ export default async function AdminResidentsPage({
           openCreateOnMount={params.new === '1'}
         />
       </AdminShell>
-    </>
   );
 }

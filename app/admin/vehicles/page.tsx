@@ -1,7 +1,6 @@
 import { requireAdminRole } from '@/lib/permissions';
 import { getScopedOrganizationId } from '@/lib/admin/org-scope';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { VehicleManagement } from '@/components/admin/VehicleManagement';
 import { listApartmentsAdminView } from '@/lib/queries/apartments';
 import { listVehiclesAdminView } from '@/lib/queries/vehicles';
@@ -30,8 +29,6 @@ export default async function AdminVehiclesPage({
   ]);
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="vehicles"
@@ -52,6 +49,5 @@ export default async function AdminVehiclesPage({
           limit={limit}
         />
       </AdminShell>
-    </>
   );
 }

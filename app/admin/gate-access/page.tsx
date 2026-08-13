@@ -1,7 +1,6 @@
 import { requireAdminRole } from '@/lib/permissions';
 import { getScopedOrganizationId } from '@/lib/admin/org-scope';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { GateAccessManagement } from '@/components/admin/GateAccessManagement';
 import { listGateAccessLogsAdminView } from '@/lib/queries/gate_access_logs';
 import { parseTablePagination } from '@/lib/admin/pagination';
@@ -26,8 +25,6 @@ export default async function AdminGateAccessPage({
   });
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="gate-access"
@@ -42,6 +39,5 @@ export default async function AdminGateAccessPage({
           limit={limit}
         />
       </AdminShell>
-    </>
   );
 }

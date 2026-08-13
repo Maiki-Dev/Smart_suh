@@ -18,6 +18,8 @@ import {
 import { useActionToast } from "@/lib/hooks/use-action-toast";
 import { formatMNT, paymentMethodLabel, paymentRecordStatusLabel } from "@/lib/admin/format";
 import { PaginationFormFields, TablePagination } from "@/components/admin/TablePagination";
+import { FinanceTabs } from "@/components/admin/FinanceTabs";
+import { AdminPrimaryAction, AdminSectionToolbar } from "@/components/admin/AdminSectionToolbar";
 import { formatDateTimeMn } from "@/lib/format/datetime";
 
 const initialState: PaymentActionState = { status: "idle" };
@@ -169,16 +171,19 @@ export function PaymentManagement({
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader className="gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <CardTitle>Төлбөр</CardTitle>
-            <p className="text-sm text-zinc-500 mt-1">Нийт {total} төлбөр</p>
-          </div>
-          <Button onClick={() => setDialogOpen(true)}>
+      <AdminSectionToolbar
+        tabs={<FinanceTabs active="payments" />}
+        action={
+          <AdminPrimaryAction onClick={() => setDialogOpen(true)}>
             <Plus className="size-4" />
             Төлбөр бүртгэх
-          </Button>
+          </AdminPrimaryAction>
+        }
+      />
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Төлбөр</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">Нийт {total} төлбөр</p>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form method="get" className="grid gap-3 md:grid-cols-3">

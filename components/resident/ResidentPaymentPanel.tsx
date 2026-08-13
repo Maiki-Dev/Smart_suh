@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatMNT } from '@/lib/admin/format';
 import {
-  FEE_TYPE_TO_KEY,
+  feeBreakdownAmount,
   INVOICE_FEE_TYPES,
   invoiceFeeTypeLabel,
   type FeeBreakdown,
@@ -24,7 +24,7 @@ import { createResidentWirePaymentAction } from '@/app/resident/payments/actions
 import type { InvoiceFeeType } from '@/types';
 import { cn } from '@/lib/utils';
 
-const FEE_ICONS: Record<InvoiceFeeType, LucideIcon> = {
+const FEE_ICONS: Partial<Record<InvoiceFeeType, LucideIcon>> = {
   APARTMENT: HomeIcon,
   PARKING: CarIcon,
   WATER: DropletsIcon,
@@ -42,7 +42,7 @@ export function ResidentPaymentPanel({
 }) {
   const [selected, setSelected] = useState<InvoiceFeeType[]>(() =>
     INVOICE_FEE_TYPES.filter(
-      (feeType) => remainingByFee[FEE_TYPE_TO_KEY[feeType]] > 0,
+      (feeType) => feeBreakdownAmount(remainingByFee, feeType) > 0,
     ),
   );
   const [error, setError] = useState<string | null>(null);
@@ -53,8 +53,8 @@ export function ResidentPaymentPanel({
       INVOICE_FEE_TYPES.map((feeType) => ({
         feeType,
         label: invoiceFeeTypeLabel(feeType),
-        amount: remainingByFee[FEE_TYPE_TO_KEY[feeType]],
-        Icon: FEE_ICONS[feeType],
+        amount: feeBreakdownAmount(remainingByFee, feeType),
+        Icon: FEE_ICONS[feeType] ?? CreditCard,
       })),
     [remainingByFee],
   );
@@ -63,7 +63,7 @@ export function ResidentPaymentPanel({
   const selectedTotal = useMemo(
     () =>
       selected.reduce(
-        (sum, feeType) => sum + remainingByFee[FEE_TYPE_TO_KEY[feeType]],
+        (sum, feeType) => sum + feeBreakdownAmount(remainingByFee, feeType),
         0,
       ),
     [selected, remainingByFee],

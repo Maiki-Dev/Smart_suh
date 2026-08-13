@@ -20,6 +20,8 @@ import { groupInvoicesByApartmentMonth } from "@/lib/fees/apartment-fees";
 import { FeeBreakdownInline } from "@/components/resident/FeeBreakdownPanel";
 import { notifyActionResult } from "@/lib/hooks/use-action-toast";
 import { PaginationFormFields, TablePagination } from "@/components/admin/TablePagination";
+import { FinanceTabs } from "@/components/admin/FinanceTabs";
+import { AdminPrimaryAction, AdminSectionToolbar } from "@/components/admin/AdminSectionToolbar";
 import {
   formatBillingMonthMn,
   formatDateMn,
@@ -84,18 +86,21 @@ export function InvoiceManagement({
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader className="gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <CardTitle>Нэхэмжлэл</CardTitle>
-            <p className="text-sm text-zinc-500 mt-1">
-              {groups.length} сарын нэхэмжлэл · {total} мөр (байр, зогсоол, ус, цахилгаан)
-            </p>
-          </div>
-          <Button onClick={handleGenerate} disabled={isPending}>
+      <AdminSectionToolbar
+        tabs={<FinanceTabs active="invoices" />}
+        action={
+          <AdminPrimaryAction onClick={handleGenerate} disabled={isPending}>
             <CalendarPlus className="size-4" />
-            {isPending ? "Үүсгэж байна..." : "Сарын нэхэмжлэл үүсгэх"}
-          </Button>
+            {isPending ? "Үүсгэж байна..." : "Сарын нэхэмжлэл"}
+          </AdminPrimaryAction>
+        }
+      />
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Нэхэмжлэл</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            {groups.length} сарын нэхэмжлэл · {total} мөр (байр, зогсоол, ус, цахилгаан)
+          </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form method="get" className="grid gap-3 lg:grid-cols-6">

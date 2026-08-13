@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Inter } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeBoot } from "@/components/layout/ThemeBoot";
+import { PRODUCT_HERO } from "@/lib/brand/product-content";
 import "./globals.css";
 
 const inter = Inter({
@@ -12,8 +13,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Smart СӨХ удирдлага",
-  description: "Монголын орон сууцны удирдлагын систем",
+  title: "Smart СӨХ | ITSafe",
+  description: PRODUCT_HERO.tagline + " " + PRODUCT_HERO.intro,
 };
 
 export default function RootLayout({
@@ -27,12 +28,8 @@ export default function RootLayout({
       className={`${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        <Script id="theme-init" strategy="beforeInteractive">
-          {`(function(){try{var s=localStorage.getItem("theme");var d=s?s==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark");else document.documentElement.classList.remove("dark");}catch(e){}})();`}
-        </Script>
-      </head>
       <body className="min-h-full h-full flex flex-col overflow-x-hidden font-sans">
+        <ThemeBoot />
         <TooltipProvider>
           {children}
           <Toaster />

@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import { requireAdminRole } from '@/lib/permissions';
 import { assertOrganizationAccess } from '@/lib/admin/org-scope';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge, paymentStatusTone } from '@/components/admin/StatusBadge';
 import { formatMNT, invoiceStatusLabel, paymentMethodLabel } from '@/lib/admin/format';
@@ -38,8 +37,6 @@ export default async function AdminInvoiceDetailPage({
   const apt = apartmentsRes.data.find((a) => a.id === invoice.apartment_id);
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="invoices"
@@ -122,7 +119,6 @@ export default async function AdminInvoiceDetailPage({
           </CardContent>
         </Card>
       </AdminShell>
-    </>
   );
 }
 

@@ -1,7 +1,6 @@
 import { requireAdminRole } from '@/lib/permissions';
 import { getScopedOrganizationId } from '@/lib/admin/org-scope';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { PaymentManagement } from '@/components/admin/PaymentManagement';
 import { listPaymentsAdminView } from '@/lib/queries/payments';
 import { listInvoicesAdminView } from '@/lib/queries/invoices';
@@ -37,13 +36,11 @@ export default async function AdminPaymentsPage({
     }));
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="payments"
-        pageTitle="Төлбөр"
-        pageSubtitle="Гараар төлбөр бүртгэх, түүх харах"
+        pageTitle="Санхүү"
+        pageSubtitle="Төлбөр, нэхэмжлэл, тайлан"
       >
         <PaymentManagement
           payments={paymentsRes.data}
@@ -54,6 +51,5 @@ export default async function AdminPaymentsPage({
           limit={limit}
         />
       </AdminShell>
-    </>
   );
 }

@@ -1,7 +1,6 @@
 import { requireRole } from '@/lib/permissions';
 import { getResidentApartmentContext } from '@/lib/resident/context';
 import { ResidentShell } from '@/components/layout/ResidentShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { listVisitorPassesByApartment } from '@/lib/queries/visitors';
 import { ResidentVisitorsPanel } from '@/components/resident/ResidentVisitorsPanel';
 
@@ -14,8 +13,6 @@ export default async function ResidentVisitorsPage() {
     : { data: [], total: 0 };
 
   return (
-    <>
-      <ThemeInitScript />
       <ResidentShell
         ctx={ctx}
         apartmentLabel={apartmentLabel}
@@ -26,6 +23,5 @@ export default async function ResidentVisitorsPage() {
       >
         <ResidentVisitorsPanel passes={passesRes.data} hasApartment={!!apartmentId} />
       </ResidentShell>
-    </>
   );
 }

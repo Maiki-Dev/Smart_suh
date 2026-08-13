@@ -1,7 +1,6 @@
 import { requireRole } from '@/lib/permissions';
 import { getResidentApartmentContext } from '@/lib/resident/context';
 import { ResidentShell } from '@/components/layout/ResidentShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import {
   listMaintenanceRequestsByApartment,
   listMaintenanceCommentsForRequests,
@@ -21,8 +20,6 @@ export default async function ResidentMaintenancePage() {
     : {};
 
   return (
-    <>
-      <ThemeInitScript />
       <ResidentShell
         ctx={ctx}
         apartmentLabel={apartmentLabel}
@@ -37,6 +34,5 @@ export default async function ResidentMaintenancePage() {
           hasApartment={!!apartmentId}
         />
       </ResidentShell>
-    </>
   );
 }

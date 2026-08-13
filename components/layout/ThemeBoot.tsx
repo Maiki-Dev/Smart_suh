@@ -2,16 +2,17 @@
 
 import { useEffect } from "react";
 
-export function ThemeInitScript() {
+/** Applies saved theme preference on mount (client-only, no script tag). */
+export function ThemeBoot() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem("theme");
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       const useDark = stored ? stored === "dark" : prefersDark;
-      const root = document.documentElement;
-      if (useDark) root.classList.add("dark");
-      else root.classList.remove("dark");
-    } catch {}
+      document.documentElement.classList.toggle("dark", useDark);
+    } catch {
+      /* ignore */
+    }
   }, []);
   return null;
 }

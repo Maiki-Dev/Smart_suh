@@ -1,7 +1,6 @@
 import { requireAdminRole } from '@/lib/permissions';
 import { getScopedOrganizationId } from '@/lib/admin/org-scope';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { ThemeInitScript } from '@/components/layout/ThemeInitScript';
 import { MaintenanceManagement } from '@/components/admin/MaintenanceManagement';
 import { listMaintenanceAdminView } from '@/lib/queries/maintenance';
 import { parseTablePagination } from '@/lib/admin/pagination';
@@ -34,8 +33,6 @@ export default async function AdminMaintenancePage({
   });
 
   return (
-    <>
-      <ThemeInitScript />
       <AdminShell
         ctx={ctx}
         activeSegment="maintenance"
@@ -55,6 +52,5 @@ export default async function AdminMaintenancePage({
           limit={limit}
         />
       </AdminShell>
-    </>
   );
 }

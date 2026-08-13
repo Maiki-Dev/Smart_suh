@@ -38,6 +38,8 @@ import {
   vehicleStatusLabel,
 } from "@/lib/admin/format";
 import { feeBreakdownLabel } from "@/lib/fees/apartment-fees";
+import { PropertyTabs } from "@/components/admin/PropertyTabs";
+import { AdminPrimaryAction, AdminSectionToolbar } from "@/components/admin/AdminSectionToolbar";
 
 const initialState: ApartmentActionState = { status: "idle" };
 
@@ -210,13 +212,10 @@ export function ApartmentManagement({
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader className="gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <CardTitle>Орон сууцны жагсаалт</CardTitle>
-            <p className="text-sm text-zinc-500 mt-1">Нийт {total} орон сууц</p>
-          </div>
-          <Button
+      <AdminSectionToolbar
+        tabs={<PropertyTabs active="apartments" />}
+        action={
+          <AdminPrimaryAction
             onClick={() => {
               setEditing(null);
               setDialogOpen(true);
@@ -224,7 +223,13 @@ export function ApartmentManagement({
           >
             <Plus className="size-4" />
             Шинэ орон сууц
-          </Button>
+          </AdminPrimaryAction>
+        }
+      />
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Орон сууцны жагсаалт</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">Нийт {total} орон сууц</p>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form method="get" className="grid gap-3 md:grid-cols-4">
