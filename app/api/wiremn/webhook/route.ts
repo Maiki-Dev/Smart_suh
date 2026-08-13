@@ -8,7 +8,8 @@ import {
   readWireSignatureHeader,
   verifyWirePaymentSignature,
 } from '@/lib/wiremn/webhook-verify';
-import type { PaymentMethod } from '@/types';
+import type { PaymentMethod, InvoiceFeeType } from '@/types';
+import { INVOICE_FEE_TYPES } from '@/lib/fees/apartment-fees';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -96,7 +97,9 @@ function parseApartmentUser(
   userId = (mdUser.user_id as string) ?? (mdUser.userId as string) ?? null;
 
   if (!apartmentId && reference?.startsWith('apt:')) {
-    apartmentId = reference.slice(4);
+    const m = reference.match(/^apt:([0-9a-f-]{36})/i);
+    if (m) apartmentId = m[1];
+    else apartmentId = reference.slice(4).split(':')[0] ?? null;
   }
 
   if (!apartmentId && reference) {
@@ -105,6 +108,24 @@ function parseApartmentUser(
   }
 
   return { apartmentId, userId };
+}
+
+function parseFeeTypes(metadata: Record<string, unknown>): InvoiceFeeType[] | undefined {
+  const raw = metadata.fee_types ?? metadata.feeTypes;
+  if (Array.isArray(raw)) {
+    const types = raw.filter((t): t is InvoiceFeeType =>
+      typeof t === 'string' && INVOICE_FEE_TYPES.includes(t as InvoiceFeeType),
+    );
+    return types.length ? types : undefined;
+  }
+  if (typeof raw === 'string' && raw.trim()) {
+    const types = raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter((t): t is InvoiceFeeType => INVOICE_FEE_TYPES.includes(t as InvoiceFeeType));
+    return types.length ? types : undefined;
+  }
+  return undefined;
 }
 
 function isPaidStatus(status: string, event: string): boolean {
@@ -157,6 +178,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   const extracted = extractPayload(payload);
   const { apartmentId, userId } = parseApartmentUser(extracted.reference, extracted.metadata);
+  const feeTypes = parseFeeTypes(extracted.metadata);
 
   const isPaid = isPaidStatus(extracted.status, extracted.event);
   const isFailed = isFailedOrCancelled(extracted.status, extracted.event);
@@ -235,6 +257,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       reported_by_user_id: userId,
     },
     idempotencyKey,
+    feeTypes,
   });
 
   try {

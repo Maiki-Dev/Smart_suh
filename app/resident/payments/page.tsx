@@ -6,15 +6,10 @@ import { formatMNT, paymentMethodLabel, paymentRecordStatusLabel } from '@/lib/a
 import { getResidentOverviewStats } from '@/lib/queries/dashboard';
 import { getApartmentDebt, listInvoicesByApartment } from '@/lib/queries/invoices';
 import { listPaymentsByApartment } from '@/lib/queries/payments';
-import {
-  feeBreakdownFromApartment,
-  feeBreakdownFromInvoices,
-  sumFeeBreakdown,
-} from '@/lib/fees/apartment-fees';
+import { remainingFeeBreakdownFromInvoices } from '@/lib/fees/apartment-fees';
 import { MonthlyInvoiceList } from '@/components/resident/MonthlyInvoiceList';
+import { ResidentPaymentPanel } from '@/components/resident/ResidentPaymentPanel';
 import { formatDateTimeMn } from '@/lib/format/datetime';
-import { resolvePaymentUrlAsync } from '@/lib/wiremn/service';
-import { CreditCard } from 'lucide-react';
 
 export default async function ResidentPaymentsPage({
   searchParams,
@@ -35,6 +30,7 @@ export default async function ResidentPaymentsPage({
   let debt = 0;
   let invoicesRes = { data: [] as Awaited<ReturnType<typeof listInvoicesByApartment>>['data'], total: 0 };
   let paymentsRes = { data: [] as Awaited<ReturnType<typeof listPaymentsByApartment>>['data'], total: 0 };
+  let remainingByFee = remainingFeeBreakdownFromInvoices([]);
 
   if (aptId) {
     [debt, invoicesRes, paymentsRes] = await Promise.all([
@@ -42,30 +38,12 @@ export default async function ResidentPaymentsPage({
       listInvoicesByApartment(aptId, { limit: 24 }),
       listPaymentsByApartment(aptId, { limit: 24 }),
     ]);
+    remainingByFee = remainingFeeBreakdownFromInvoices(invoicesRes.data);
   }
 
   const apartmentLabel = overview.apartment
     ? [overview.apartment.tower, overview.apartment.apartment_number].filter(Boolean).join(' · ')
     : '—';
-
-  const payRes = await resolvePaymentUrlAsync({
-    fallbackAmount: debt > 0 ? debt : undefined,
-    description: apartmentLabel
-      ? `СӨХ төлбөр - ${apartmentLabel}`
-      : 'СӨХ төлбөр',
-    reference: aptId ? `apt:${aptId}` : undefined,
-    apartmentId: aptId,
-    residentUserId: ctx.user.id,
-    successRedirectPath: '/resident/payments',
-    failRedirectPath: '/resident/payments',
-  });
-
-  const currentMonthFees =
-    overview.current_month_invoices.length > 0
-      ? feeBreakdownFromInvoices(overview.current_month_invoices)
-      : overview.apartment
-        ? feeBreakdownFromApartment(overview.apartment)
-        : null;
 
   return (
     <>
@@ -92,51 +70,28 @@ export default async function ResidentPaymentsPage({
         ) : null}
 
         <div className="grid gap-6 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Одоогийн төлбөр</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold tabular-nums">{formatMNT(debt)}</div>
-              <p className="text-sm text-zinc-500 mt-2">Нээлттэй нэхэмжлэлийн үлдэгдэл</p>
-              {currentMonthFees ? (
-                <p className="text-xs text-zinc-500 mt-1">
-                  Энэ сарын нийт: {formatMNT(sumFeeBreakdown(currentMonthFees))}
-                </p>
-              ) : null}
-              <a
-                href={payRes.url}
-                target="_blank"
-                rel="noreferrer"
-                aria-disabled={payRes.unavailable}
-                className={`mt-4 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors ${
-                  payRes.unavailable
-                    ? 'pointer-events-none bg-zinc-300 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400'
-                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                }`}
-              >
-                <CreditCard className="size-4" />
-                {payRes.unavailable ? 'Wire.mn тохиргоо дутуу' : 'Төлбөр төлөх (Wire.mn)'}
-              </a>
-              {payRes.wireError ? (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                  {payRes.wireError}
-                </p>
-              ) : null}
-              {payRes.unavailable ? (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                  Vercel дээр WIRE_MN_API_KEY эсвэл WIRE_MN_PAYMENT_LINK
-                  (https://pay.wire.mn/link/slug) тохируулна уу.
-                </p>
-              ) : null}
-            </CardContent>
-          </Card>
+          {!aptId ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Төлбөр төлөх</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-zinc-500">Орон сууц холбогдоогүй</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <ResidentPaymentPanel
+              totalDebt={debt}
+              remainingByFee={remainingByFee}
+              apartmentLabel={apartmentLabel}
+            />
+          )}
 
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Нэхэмжлэл</CardTitle>
               <p className="text-sm text-zinc-500">
-                Нэг байрны сар бүрийн төлбөр — байр, зогсоол, ус, цахилгаан нэгтгэгдсэн
+                Нэг байрны сар бүрийн төлбөр — байр, зогсоол, ус, цахилгаан тусдаа
               </p>
             </CardHeader>
             <CardContent>

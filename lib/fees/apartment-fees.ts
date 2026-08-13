@@ -93,8 +93,25 @@ export function feeBreakdownFromInvoices(
   return fees;
 }
 
+export function remainingFeeBreakdownFromInvoices(
+  invoices: Array<{ fee_type: InvoiceFeeType; remaining_amount: number; status: string }>,
+): FeeBreakdown {
+  const fees = normalizeFeeBreakdown(null);
+  for (const invoice of invoices) {
+    if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') continue;
+    const remaining = Number(invoice.remaining_amount ?? 0);
+    if (remaining <= 0) continue;
+    fees[FEE_TYPE_TO_KEY[invoice.fee_type]] += remaining;
+  }
+  return fees;
+}
+
 export function feeBreakdownFromApartment(apartment: FeeBreakdown): FeeBreakdown {
   return normalizeFeeBreakdown(apartment);
+}
+
+export function sumRemainingForFeeTypes(fees: FeeBreakdown, feeTypes: InvoiceFeeType[]): number {
+  return feeTypes.reduce((sum, feeType) => sum + fees[FEE_TYPE_TO_KEY[feeType]], 0);
 }
 
 export function aggregateInvoiceTotals(

@@ -113,6 +113,7 @@ export interface ResolvePaymentUrlArgs {
   failRedirectPath?: string;
   metadata?: Record<string, unknown>;
   preferDynamic?: boolean;
+  feeTypes?: string[];
 }
 
 export interface ResolvePaymentUrlResult {
@@ -136,6 +137,7 @@ async function createCheckoutPayment(args: {
   successRedirect?: string;
   failRedirect?: string;
   metadata?: Record<string, unknown>;
+  feeTypes?: string[];
 }): Promise<{ url: string; paymentIntentId: string } | { error: string } | null> {
   if (!WIRE_MN_API_KEY || args.amount <= 0) return null;
 
@@ -143,6 +145,7 @@ async function createCheckoutPayment(args: {
   if (args.apartmentId) metadata.apartment_id = args.apartmentId;
   if (args.residentUserId) metadata.user_id = args.residentUserId;
   if (args.reference) metadata.reference = args.reference;
+  if (args.feeTypes?.length) metadata.fee_types = args.feeTypes.join(',');
 
   const intentBody: Record<string, unknown> = {
     amount: Math.round(args.amount),
@@ -222,6 +225,7 @@ export async function resolvePaymentUrlAsync(
       successRedirect,
       failRedirect,
       metadata: args.metadata,
+      feeTypes: args.feeTypes,
     });
     if (checkout && 'url' in checkout) {
       return {

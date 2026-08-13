@@ -12,7 +12,7 @@ import {
 import { createNotification } from '@/lib/queries/notifications';
 import { createPayment, getPaymentById } from '@/lib/queries/payments';
 import { recalculateVehicleAccess } from '@/lib/gate/vehicle-access-service';
-import type { Invoice, Payment, PaymentMethod } from '@/types';
+import type { Invoice, Payment, PaymentMethod, InvoiceFeeType } from '@/types';
 
 export interface ApplyApartmentPaymentInput {
   organizationId: string;
@@ -24,6 +24,7 @@ export interface ApplyApartmentPaymentInput {
   createdBy?: string | null;
   metadata?: Record<string, unknown>;
   idempotencyKey?: string | null;
+  feeTypes?: InvoiceFeeType[];
 }
 
 export interface ApplyApartmentPaymentResult {
@@ -85,9 +86,15 @@ async function notifyApartmentPayment(
 function pickOpenInvoices(
   allInvoices: Invoice[],
   maxAmount: number,
+  feeTypes?: InvoiceFeeType[],
 ): Array<{ invoice: Invoice; apply: number; remaining: number }> {
+  const allowed = feeTypes?.length ? new Set(feeTypes) : null;
   const open = allInvoices.filter(
-    (i) => i.status !== 'PAID' && i.status !== 'CANCELLED' && i.remaining_amount > 0,
+    (i) =>
+      i.status !== 'PAID' &&
+      i.status !== 'CANCELLED' &&
+      i.remaining_amount > 0 &&
+      (!allowed || allowed.has(i.fee_type)),
   );
 
   open.sort((a, b) => {
@@ -136,7 +143,7 @@ export async function applyApartmentPayment(
       tx,
     );
 
-    const picks = pickOpenInvoices(invoices, input.amount);
+    const picks = pickOpenInvoices(invoices, input.amount, input.feeTypes);
     const payments: Payment[] = [];
     const invoicesUpdated: ApplyApartmentPaymentResult['invoicesUpdated'] = [];
     let runningAmount = input.amount;
