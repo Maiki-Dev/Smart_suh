@@ -108,11 +108,22 @@ export default async function ResidentPaymentsPage({
                 href={payRes.url}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-4 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                aria-disabled={payRes.unavailable}
+                className={`mt-4 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors ${
+                  payRes.unavailable
+                    ? 'pointer-events-none bg-zinc-300 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400'
+                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                }`}
               >
                 <CreditCard className="size-4" />
-                Төлбөр төлөх (Wire.mn)
+                {payRes.unavailable ? 'Wire.mn тохиргоо дутуу' : 'Төлбөр төлөх (Wire.mn)'}
               </a>
+              {payRes.unavailable ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                  Vercel дээр WIRE_MN_API_KEY (sk_live_...) эсвэл WIRE_MN_PAYMENT_LINK
+                  (https://pay.wire.mn/link/slug) тохируулна уу.
+                </p>
+              ) : null}
             </CardContent>
           </Card>
 
