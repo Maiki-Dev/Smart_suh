@@ -2,13 +2,14 @@
 
 import type { ReactNode } from "react";
 import { useActionState } from "react";
-import { Lock, User } from "lucide-react";
+import { Lock, LogOut, User } from "lucide-react";
 import type { User as AppUser } from "@/types";
 import {
   changeResidentPasswordAction,
   updateResidentProfileAction,
   type ResidentProfileActionState,
 } from "@/app/resident/profile/actions";
+import { logoutAction } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -149,6 +150,36 @@ export function ResidentProfilePanel({
           </CardContent>
         </Card>
       ) : null}
+
+      <Card className="border-destructive/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LogOut className="size-4 text-destructive" />
+            Сесс
+          </CardTitle>
+          <CardDescription>
+            Системээс гарна. Нэвтрэх мэдээллээ санахгүй бол дахин нэвтрэх шаардлагатай.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            action={logoutAction}
+            onSubmit={(e) => {
+              const ok = window.confirm("Та системээс гарахдаа итгэлтэй байна уу?");
+              if (!ok) e.preventDefault();
+            }}
+            className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="text-sm text-muted-foreground">
+              Одоо <span className="font-medium text-foreground">{user.email}</span> и-мэйлээр нэвтэрсэн байна.
+            </div>
+            <Button type="submit" variant="destructive" className="w-full sm:w-auto">
+              <LogOut className="mr-2 size-4" />
+              Системээс гарах
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

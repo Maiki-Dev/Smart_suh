@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeBoot } from "@/components/layout/ThemeBoot";
+import { CapacitorBoot } from "@/components/native/CapacitorBoot";
 import { PRODUCT_HERO } from "@/lib/brand/product-content";
 import "./globals.css";
 
@@ -15,6 +16,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Smart СӨХ | ITSafe",
   description: PRODUCT_HERO.tagline + " " + PRODUCT_HERO.intro,
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
 };
 
 export default function RootLayout({
@@ -30,6 +37,7 @@ export default function RootLayout({
     >
       <body className="min-h-full h-full flex flex-col overflow-x-hidden font-sans">
         <ThemeBoot />
+        <CapacitorBoot />
         <TooltipProvider>
           {children}
           <Toaster />

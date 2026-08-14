@@ -8,6 +8,7 @@ import {
   Megaphone as MegaphoneIcon,
   Bell as BellIcon,
   Vote as VoteIcon,
+  UserRound as UserIcon,
 } from 'lucide-react';
 
 export interface ResidentNavItem {

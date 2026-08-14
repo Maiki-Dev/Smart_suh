@@ -118,13 +118,52 @@
 }
 
 @layer base {
+  html {
+    box-sizing: border-box;
+  }
+  *,
+  *::before,
+  *::after {
+    box-sizing: inherit;
+  }
   * {
     @apply border-border outline-ring/50;
   }
   html {
-    @apply font-sans h-full;
+    @apply font-sans h-full min-h-[100dvh];
   }
   body {
-    @apply bg-background text-foreground min-h-full h-full overflow-x-hidden;
+    @apply bg-background text-foreground min-h-[100dvh] h-full w-full overflow-x-hidden;
+  }
+}
+
+/* Capacitor native WebView — notch / home indicator */
+html.capacitor-native body {
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+html.capacitor-native [data-mobile-bottom-nav] {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  height: calc(4rem + env(safe-area-inset-bottom, 0));
+}
+
+html.capacitor-native [data-shell-root] {
+  height: calc(100dvh - env(safe-area-inset-top, 0)) !important;
+  min-height: calc(100dvh - env(safe-area-inset-top, 0)) !important;
+}
+
+html.capacitor-native [data-login-page] {
+  height: calc(100dvh - env(safe-area-inset-top, 0)) !important;
+  min-height: calc(100dvh - env(safe-area-inset-top, 0)) !important;
+}
+
+.resident-content-pb {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0));
+}
+
+@media (min-width: 768px) {
+  .resident-content-pb {
+    padding-bottom: 0 !important;
   }
 }

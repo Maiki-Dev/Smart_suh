@@ -63,8 +63,11 @@ export function ResidentShell({
   const notifCount = Math.max(0, Math.min(99, unreadNotifications));
 
   return (
-    <div className="h-dvh overflow-hidden bg-background text-foreground">
-      <div className="flex h-full">
+    <div
+      data-shell-root
+      className="h-[100dvh] min-h-[100dvh] w-full overflow-hidden bg-background text-foreground"
+    >
+      <div className="flex h-full w-full">
         <aside className="hidden md:flex w-60 lg:w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
           <SidebarBrandHeader subtitle={apartmentLabel} href="/resident" />
 
@@ -114,8 +117,8 @@ export function ResidentShell({
                   </span>
                 ) : null}
               </a>
-              <div className="ml-1 hidden items-center gap-2 border-l border-border pl-3 sm:flex">
-                <Badge variant="secondary" className="font-normal">
+              <div className="ml-1 flex items-center gap-2 sm:border-l sm:border-border sm:pl-3">
+                <Badge variant="secondary" className="hidden font-normal sm:inline-flex">
                   {apartmentLabel}
                 </Badge>
                 <a
@@ -141,7 +144,7 @@ export function ResidentShell({
             activeSegment={activeSegment}
           />
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/30 pb-20 md:pb-0">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/30 resident-content-pb">
             {pageSubtitle ? (
               <div className="border-b border-border bg-background px-4 py-4 sm:px-6 lg:px-8">
                 <h2 className="text-lg font-semibold sm:text-xl">{pageTitle ?? "Нүүр"}</h2>
@@ -508,7 +511,7 @@ function MobileBottomNav({
   activeSegment: string;
 }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background md:hidden" data-mobile-bottom-nav>
       <div className="mx-auto grid h-16 max-w-lg grid-cols-5">
         {RESIDENT_BOTTOM_NAV_ITEMS.map((item) => {
           const active = isResidentNavItemActive(item, activeSegment);

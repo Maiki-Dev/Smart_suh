@@ -8,6 +8,7 @@ import {
   User,
   Lock,
   Info,
+  LogOut,
 } from "lucide-react";
 import type { Organization, User as AppUser } from "@/types";
 import type { OrganizationSettings } from "@/lib/organization/settings";
@@ -23,6 +24,7 @@ import {
   updateProfileAction,
   type SettingsActionState,
 } from "@/app/admin/settings/actions";
+import { logoutAction } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -337,6 +339,41 @@ export function SettingsPanel({
             </CardContent>
           </Card>
         ) : null}
+
+        <Card className="border-destructive/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LogOut className="size-4 text-destructive" />
+              Сесс
+            </CardTitle>
+            <CardDescription>
+              Системээс гарна. Дахин нэвтрэхдээ нууц үгээ оруулах шаардлагатай.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form
+              action={logoutAction}
+              onSubmit={(e) => {
+                const ok = window.confirm("Та системээс гарахдаа итгэлтэй байна уу?");
+                if (!ok) e.preventDefault();
+              }}
+              className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="text-sm text-muted-foreground">
+                Одоо{" "}
+                <span className="font-medium text-foreground">{user.email}</span>{" "}
+                <span className="ml-1 inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
+                  {roleLabel(user.role)}
+                </span>{" "}
+                эрхээр нэвтэрсэн байна.
+              </div>
+              <Button type="submit" variant="destructive" className="w-full sm:w-auto">
+                <LogOut className="mr-2 size-4" />
+                Системээс гарах
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

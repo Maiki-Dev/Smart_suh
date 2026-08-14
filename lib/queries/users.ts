@@ -22,14 +22,77 @@ export async function getUserById(
   return rows[0] ?? null;
 }
 
+export function normalizePhone(raw: string): string {
+  let digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('976')) {
+    digits = digits.slice(3);
+  }
+  return digits;
+}
+
+export function isLikeEmail(raw: string): boolean {
+  return raw.includes('@');
+}
+
+export async function getUserByPhone(
+  organizationId: string,
+  phone: string,
+  client?: DbClient,
+): Promise<User | null> {
+  const normalized = normalizePhone(phone);
+  if (!normalized) return null;
+  const { rows } = await query<User>(
+    `${SELECT_SQL} WHERE organization_id = $1 AND phone IS NOT NULL AND REGEXP_REPLACE(REGEXP_REPLACE(phone, '\\D', '', 'g'), '^976', '') = $2`,
+    [organizationId, normalized],
+    client,
+  );
+  return rows[0] ?? null;
+}
+
+export async function getUserByIdentifier(
+  organizationId: string,
+  identifier: string,
+  client?: DbClient,
+): Promise<User | null> {
+  const raw = identifier.trim();
+  if (!raw) return null;
+
+  const lowerRaw = raw.toLowerCase();
+  if (isLikeEmail(lowerRaw)) {
+    const emailRes = await query<User>(
+      `${SELECT_SQL} WHERE organization_id = $1 AND BTRIM(LOWER(email)) = BTRIM(LOWER($2))`,
+      [organizationId, lowerRaw],
+      client,
+    );
+    return emailRes.rows[0] ?? null;
+  }
+
+  const digitsOnly = raw.replace(/\D/g, '');
+  const hasDigits = digitsOnly.length >= 6;
+
+  let found: User | null = null;
+  if (hasDigits) {
+    found = await getUserByPhone(organizationId, raw, client);
+    if (found) return found;
+  }
+
+  const emailFallback = await query<User>(
+    `${SELECT_SQL} WHERE organization_id = $1 AND BTRIM(LOWER(email)) = BTRIM(LOWER($2))`,
+    [organizationId, lowerRaw],
+    client,
+  );
+  return emailFallback.rows[0] ?? null;
+}
+
 export async function getUserByEmail(
   organizationId: string,
   email: string,
   client?: DbClient,
 ): Promise<User | null> {
+  const trimmed = email.trim().toLowerCase();
   const { rows } = await query<User>(
-    `${SELECT_SQL} WHERE organization_id = $1 AND email = $2`,
-    [organizationId, email],
+    `${SELECT_SQL} WHERE organization_id = $1 AND BTRIM(LOWER(email)) = $2`,
+    [organizationId, trimmed],
     client,
   );
   return rows[0] ?? null;

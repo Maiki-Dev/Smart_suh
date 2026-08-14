@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { use, useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { Mail, Lock, AlertTriangle } from "lucide-react";
+import { Mail, Lock, AlertTriangle, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -45,12 +45,12 @@ export default function LoginPage({
   return (
     <LoginPageFrame>
       <LoginFormShell
-        title="Нэвтрэх"
-        description="И-мэйл, нууц үгээ оруулаад системд нэвтэрнэ үү."
+        title="Нэвтрэх хэсэг"
+        description="Тавтай морилно уу! Манай платформ нь нэгдсэн SMART систем юм."
         footer={
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <LoginHelpBox>
-              Анх удаа нэвтэрч байгаа бол СӨХ-ын өгсөн и-мэйл, нууц үгийг ашиглана уу.
+              Анх удаа нэвтэрч байгаа бол СӨХ-ын өгсөн и-мэйл эсвэл утасны дугаар, нууц үгийг ашиглана уу.
             </LoginHelpBox>
             <p className="text-center">
               <Link
@@ -76,21 +76,25 @@ export default function LoginPage({
           <input type="hidden" name="from" value={from} />
 
           <LoginField
-            id="email"
-            label="И-мэйл"
-            icon={Mail}
-            hint="Бүртгэлтэй и-мэйл хаягаа оруулна уу"
-            error={state.fieldErrors?.email?.[0]}
+            id="identifier"
+            label="И-мэйл эсвэл утасны дугаар"
+            icon={(props: any) => (
+              <div className="flex items-center gap-1">
+                <Mail {...props} className="size-4" />
+              </div>
+            )}
+            hint="Бүртгэлтэй и-мэйл эсвэл утасны дугаараа оруулна уу"
+            error={state.fieldErrors?.identifier?.[0]}
           >
             <Input
-              id="email"
-              name="email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
+              id="identifier"
+              name="identifier"
+              type="text"
+              inputMode="text"
+              autoComplete="username"
               autoFocus
               required
-              placeholder="name@example.com"
+              placeholder="99112233"
             />
           </LoginField>
 

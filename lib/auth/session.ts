@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { Session, User, Organization } from '@/types';
 import { getValidSessionByToken, deleteSession as deleteDbSession, touchSession, extendSession } from '@/lib/queries/sessions';
-import { getUserById, getUserByEmail } from '@/lib/queries/users';
+import { getUserById, getUserByIdentifier } from '@/lib/queries/users';
 import { getOrganizationById } from '@/lib/queries/organizations';
 import { AUTH_COOKIE_NAME, sessionCookieOptions, clearSessionCookieOptions, SESSION_DURATION_MS } from './cookies';
 import { verifyPasswordWithUpgrade } from './password';
@@ -54,16 +54,6 @@ export async function getCurrentAuth(): Promise<AuthContext | null> {
   const organization = await getOrganizationById(user.organization_id);
   await touchSession(session.id);
 
-  const expiresAtMs = new Date(session.expires_at).getTime();
-  const remaining = expiresAtMs - Date.now();
-  if (remaining > 0 && remaining < SESSION_DURATION_MS / 2) {
-    const extended = await extendSession(session.id, SESSION_DURATION_MS);
-    if (extended) {
-      const newExpMs = new Date(extended.expires_at).getTime();
-      await writeSessionCookie(extended.session_token, newExpMs);
-    }
-  }
-
   return { session, user: { ...user, organization } };
 }
 
@@ -72,10 +62,6 @@ export async function requireAuth(options?: {
 }): Promise<AuthContext> {
   const ctx = await getCurrentAuth();
   if (!ctx) {
-    const token = await readSessionTokenFromCookie();
-    if (token) {
-      await removeSessionCookie();
-    }
     redirect('/login');
   }
   if (ctx.user.must_change_password && !options?.skipPasswordChangeRedirect) {
@@ -99,7 +85,10 @@ export async function authenticateByCredentials(input: {
   const organization_id = organizationId ?? (await resolveDefaultOrganizationId());
   if (!organization_id) return { ok: false, reason: 'INVALID_CREDENTIALS' };
 
-  const user = await getUserByEmail(organization_id, email.trim().toLowerCase());
+  const identifier = email?.trim() ?? '';
+  if (!identifier) return { ok: false, reason: 'INVALID_CREDENTIALS' };
+
+  const user = await getUserByIdentifier(organization_id, identifier);
   if (!user) return { ok: false, reason: 'INVALID_CREDENTIALS' };
   if (user.status !== 'ACTIVE') return { ok: false, reason: 'USER_INACTIVE' };
 

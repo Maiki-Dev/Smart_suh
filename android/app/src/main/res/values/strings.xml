@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Smart СӨХ</string>
+    <string name="title_activity_main">Smart СӨХ</string>
+    <string name="package_name">mn.itsafe.smartsokh</string>
+    <string name="custom_url_scheme">mn.itsafe.smartsokh</string>
+</resources>

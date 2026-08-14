@@ -116,7 +116,7 @@ export function LoginFormShell({
   footer?: ReactNode;
 }) {
   return (
-    <main className="relative flex min-h-full flex-1 flex-col justify-center overflow-hidden px-4 py-8 sm:px-8 lg:px-12 xl:px-16">
+    <main className="relative flex min-h-full w-full flex-1 flex-col px-4 py-6 sm:px-8 sm:py-8 lg:px-12 lg:py-10 xl:px-16">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-40"
@@ -133,25 +133,31 @@ export function LoginFormShell({
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_80%_0%,rgba(6,95,70,0.06),transparent_50%)]"
       />
 
-      <div className="relative mx-auto w-full max-w-[440px]">
-        <div className="mb-6 flex items-center gap-4 lg:hidden">
-          <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/10">
-            <SmartSokhMark className="size-8" />
+      <div className="relative mx-auto flex w-full max-w-[440px] min-h-full flex-col justify-center py-4">
+        <div className="mb-5 hidden items-center gap-4 lg:flex">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/10">
+            <SmartSokhMark className="size-7" />
+          </div>
+          <BrandLockup variant="login-light" />
+        </div>
+        <div className="mb-5 flex items-center gap-4 lg:hidden">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/10">
+            <SmartSokhMark className="size-7" />
           </div>
           <BrandLockup variant="login-light" />
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_8px_30px_rgba(6,95,70,0.08)]">
-          <div className="border-b border-border/80 bg-primary/[0.04] px-6 py-7 sm:px-8">
+          <div className="border-b border-border/80 bg-primary/[0.04] px-5 py-5 sm:px-8 sm:py-7">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">{BRAND.company}</p>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-foreground">{title}</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{description}</p>
           </div>
 
-          <div className="px-6 py-6 sm:px-8 sm:py-7">{children}</div>
+          <div className="px-5 py-5 sm:px-8 sm:py-7">{children}</div>
 
           {footer ? (
-            <div className="border-t border-border/80 bg-muted/25 px-6 py-5 sm:px-8">{footer}</div>
+            <div className="border-t border-border/80 bg-muted/25 px-4 py-4 sm:px-8 sm:py-5">{footer}</div>
           ) : null}
         </div>
       </div>
@@ -170,7 +176,7 @@ export function LoginField({
 }: {
   id: string;
   label: string;
-  icon: LucideIcon;
+  icon: LucideIcon | React.ComponentType<any>;
   hint?: string;
   labelAction?: ReactNode;
   error?: string;
@@ -214,11 +220,16 @@ export function LoginPageFrame({
   brandPanel?: ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#f8f7f4] lg:grid lg:grid-cols-2">
-      <div className="hidden min-h-screen lg:block">
-        {brandPanel ?? <LoginBrandPanel className="min-h-screen" />}
+    <div
+      data-login-page
+      className="h-[100dvh] min-h-[100dvh] overflow-hidden bg-[#f8f7f4] lg:grid lg:grid-cols-2"
+    >
+      <div className="hidden h-full min-h-0 lg:block">
+        {brandPanel ?? <LoginBrandPanel className="h-full" />}
       </div>
-      <div className="flex min-h-screen flex-col">{children}</div>
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+      </div>
     </div>
   );
 }

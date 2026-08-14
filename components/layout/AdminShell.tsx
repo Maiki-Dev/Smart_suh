@@ -58,8 +58,11 @@ export function AdminShell({
   const fullName = `${ctx.user.first_name} ${ctx.user.last_name}`.trim();
 
   return (
-    <div className="h-dvh overflow-hidden bg-background text-foreground">
-      <div className="flex h-full">
+    <div
+      data-shell-root
+      className="h-[100dvh] min-h-[100dvh] w-full overflow-hidden bg-background text-foreground"
+    >
+      <div className="flex h-full w-full">
         <aside className="hidden md:flex w-60 lg:w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
           <SidebarBrandHeader subtitle={orgName} href="/admin" />
 
@@ -100,8 +103,8 @@ export function AdminShell({
               >
                 <BellIcon className="size-4" />
               </button>
-              <div className="ml-1 hidden items-center gap-2 border-l border-border pl-3 sm:flex">
-                <Badge variant="secondary" className={cn("font-normal", roleBadge.className)}>
+              <div className="ml-1 flex items-center gap-2 sm:border-l sm:border-border sm:pl-3">
+                <Badge variant="secondary" className={cn("hidden font-normal sm:inline-flex", roleBadge.className)}>
                   {roleBadge.label}
                 </Badge>
                 <a

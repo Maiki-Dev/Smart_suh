@@ -5,8 +5,36 @@ import { z } from 'zod';
 import { authenticateByCredentials, logoutCurrent } from '@/lib/auth/session';
 import { getDefaultLandingPathForRole } from '@/lib/permissions';
 
+const identifierSchema = z.string().min(3, { message: 'И-мэйл эсвэл утасны дугаараа оруулна уу' }).superRefine((val, ctx) => {
+  const trimmed = val.trim();
+  if (!trimmed) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'И-мэйл эсвэл утасны дугаараа оруулна уу' });
+    return;
+  }
+  if (trimmed.includes('@')) {
+    const r = z.string().email({ message: 'И-мэйл хаяг буруу байна' }).safeParse(trimmed);
+    if (!r.success) {
+      r.error.issues.forEach((i) => {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: i.message,
+        });
+      });
+    }
+    return;
+  }
+  const digits = trimmed.replace(/\D/g, '');
+  const normalized = digits.startsWith('976') ? digits.slice(3) : digits;
+  if (normalized.length < 7 || normalized.length > 15) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Утасны дугаар буруу байна. Жишээ: 99112233 эсвэл +97699112233',
+    });
+  }
+});
+
 const loginSchema = z.object({
-  email: z.string().email({ message: 'И-мэйл хаяг буруу байна' }),
+  identifier: identifierSchema,
   password: z.string().min(6, { message: 'Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой' }),
 });
 
@@ -14,7 +42,7 @@ export type LoginActionState = {
   status: 'idle' | 'error' | 'success';
   message?: string;
   fieldErrors?: {
-    email?: string[];
+    identifier?: string[];
     password?: string[];
   };
 };
@@ -23,11 +51,11 @@ export async function loginAction(
   _prevState: LoginActionState,
   formData: FormData,
 ): Promise<LoginActionState> {
-  const email = formData.get('email') as string;
+  const identifier = formData.get('identifier') as string;
   const password = formData.get('password') as string;
   const from = (formData.get('from') as string) || '';
 
-  const validated = loginSchema.safeParse({ email, password });
+  const validated = loginSchema.safeParse({ identifier, password });
   if (!validated.success) {
     return {
       status: 'error',
@@ -39,7 +67,7 @@ export async function loginAction(
   let result;
   try {
     result = await authenticateByCredentials({
-      email: validated.data.email,
+      email: validated.data.identifier,
       password: validated.data.password,
     });
   } catch (error) {
@@ -66,7 +94,7 @@ export async function loginAction(
       default:
         return {
           status: 'error',
-          message: 'И-мэйл эсвэл нууц үг буруу байна',
+          message: 'И-мэйл/утасны дугаар эсвэл нууц үг буруу байна',
         };
     }
   }
